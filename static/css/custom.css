@@ -1,208 +1,162 @@
-/* Custom CSS for AI System */
+/* Custom CSS for Self-Improving AI System */
 
 /* Global Styles */
 :root {
-    --sidebar-width: 250px;
     --console-bg: #1a1d20;
     --console-text: #d2d3d5;
-    --pulse-color: rgba(25, 135, 84, 0.7);
+    --user-message-bg: #0d6efd;
+    --system-message-bg: #f8f9fa;
+    --system-message-text: #212529;
+    --user-message-text: #ffffff;
 }
 
 body {
     min-height: 100vh;
-    overflow-x: hidden;
+    background-color: #f8f9fa;
 }
 
-.wrapper {
-    display: flex;
-    width: 100%;
-    min-height: 100vh;
+/* Control Panel Header */
+.header-badge {
+    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
 }
 
-/* Sidebar Styles */
-#sidebar {
-    width: var(--sidebar-width);
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100vh;
-    z-index: 999;
-    color: #fff;
-    transition: all 0.3s;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    display: flex;
-    flex-direction: column;
+/* Simple Status Cards */
+.status-card {
+    transition: all 0.3s ease;
+    border-radius: 10px;
+    overflow: hidden;
 }
 
-#sidebar .sidebar-header {
-    padding: 20px;
-    background: #343a40;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+.status-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
 }
 
-#sidebar ul.components {
-    padding: 20px 0;
-    flex-grow: 1;
-    overflow-y: auto;
+/* Chat Interface Styles */
+#chat-container {
+    background-color: #ffffff;
+    border-radius: 4px;
 }
 
-#sidebar ul p {
-    color: #fff;
-    padding: 10px;
+.chat-message {
+    position: relative;
+    margin-bottom: 1.5rem;
 }
 
-#sidebar ul li a {
-    padding: 10px 20px;
-    font-size: 1em;
+.user-message {
+    text-align: right;
+}
+
+.system-message .message-content {
+    background-color: var(--system-message-bg);
+    color: var(--system-message-text);
+    border-radius: 15px 15px 15px 0;
+    display: inline-block;
+}
+
+.user-message .message-content {
+    background-color: var(--user-message-bg);
+    color: var(--user-message-text);
+    border-radius: 15px 15px 0 15px;
+    display: inline-block;
+    margin-left: auto;
+}
+
+.message-time {
     display: block;
-    color: #adb5bd;
-    text-decoration: none;
-    transition: all 0.3s;
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
 }
 
-#sidebar ul li a:hover {
-    color: #fff;
-    background: #495057;
-}
-
-#sidebar ul li.active > a, 
-#sidebar a[aria-expanded="true"] {
-    color: #fff;
-    background: #495057;
-}
-
-#sidebar ul ul a {
-    font-size: 0.9em !important;
-    padding-left: 30px !important;
-    background: #343a40;
-}
-
-#content {
-    width: 100%;
-    min-height: 100vh;
-    transition: all 0.3s;
-}
-
-#content.with-sidebar {
-    margin-left: var(--sidebar-width);
-    width: calc(100% - var(--sidebar-width));
-}
-
-/* System Status Area */
-.system-status {
-    margin-top: auto;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.status-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 5px;
+.user-message .message-time {
+    text-align: right;
 }
 
 /* Console Styles */
 .console {
     background-color: var(--console-bg);
     color: var(--console-text);
-    height: 250px;
-    overflow-y: auto;
     font-family: 'Courier New', monospace;
-    padding: 10px;
-    border-radius: 0 0 5px 5px;
+    padding: 10px 15px;
+    border-radius: 0 0 4px 4px;
+    line-height: 1.6;
+    font-size: 0.9rem;
 }
 
 .console-line {
     margin-bottom: 5px;
-    font-size: 0.9rem;
-    line-height: 1.4;
     white-space: pre-wrap;
     word-break: break-word;
 }
 
-/* Card and Dashboard Styles */
-.card {
-    margin-bottom: 20px;
-    border: none;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+.console-line span {
+    margin-right: 8px;
 }
 
-.card-header {
-    background-color: rgba(0, 0, 0, 0.03);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+/* Animated elements */
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(13, 110, 253, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(13, 110, 253, 0);
+    }
 }
 
-.feature-icon {
-    text-align: center;
-    margin-bottom: 15px;
-    font-size: 2rem;
-    color: #0d6efd;
-}
-
-/* Animation for the AI graphic */
-.pulse-circle {
+.system-active {
     animation: pulse 2s infinite;
 }
 
-@keyframes pulse {
-    0% {
-        r: 10;
-        fill: #6c757d;
-    }
-    50% {
-        r: 12;
-        fill: var(--pulse-color);
-    }
-    100% {
-        r: 10;
-        fill: #6c757d;
-    }
+/* Button Styles */
+.btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
 }
 
-.active-line {
-    stroke: #6c757d;
-    stroke-width: 1;
-    opacity: 0.7;
+.btn-outline-light {
+    color: #f8f9fa;
+    border-color: #f8f9fa;
 }
 
-.feature-node {
-    transition: r 0.3s ease;
-}
-
-.data-packet {
-    r: 1.5;
-    fill: #ffffff;
-}
-
-/* Service Status Styles */
-.service-status-container {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.service-status {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.btn-outline-light:hover {
+    background-color: #f8f9fa;
+    color: #212529;
 }
 
 /* Responsive Adjustments */
+@media (max-width: 992px) {
+    .container {
+        max-width: 100%;
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+}
+
 @media (max-width: 768px) {
-    #sidebar {
-        margin-left: -250px;
+    .status-card h3 {
+        font-size: 1.75rem;
     }
-    #sidebar.active {
-        margin-left: 0;
+    
+    .status-card p {
+        font-size: 0.9rem;
     }
-    #content {
-        width: 100%;
-        margin-left: 0;
+    
+    .console {
+        height: 150px;
     }
-    #content.active {
-        margin-left: 250px;
+}
+
+@media (max-width: 576px) {
+    .header-title {
+        font-size: 1.25rem;
     }
-    #sidebarCollapse span {
-        display: none;
+    
+    .header-badge {
+        font-size: 0.75rem;
     }
 }

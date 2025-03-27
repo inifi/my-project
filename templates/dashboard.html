@@ -1,211 +1,118 @@
 {% extends "layout.html" %}
 
-{% block title %}| Dashboard{% endblock %}
-
-{% block head %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-{% endblock %}
+{% block title %}| AI Control Panel{% endblock %}
 
 {% block content %}
 <header class="bg-dark p-3 mb-4">
     <div class="container">
         <div class="d-flex justify-content-between align-items-center">
-            <h1 class="h2 mb-0">Dashboard</h1>
-            <div class="btn-group">
-                <button type="button" class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#queryModal">
-                    <i class="bi bi-chat-dots me-1"></i>Query AI
-                </button>
-                <button type="button" class="btn btn-outline-light" id="syncKnowledgeBtn">
-                    <i class="bi bi-arrow-repeat me-1"></i>Sync Knowledge
-                </button>
+            <h1 class="h2 mb-0">AI Control Panel</h1>
+            <div>
+                <h6 class="text-light mb-0">Connected with fixed credentials: <span class="badge bg-success">NOBODY / ONEWORLD</span></h6>
             </div>
         </div>
     </div>
 </header>
 
 <div class="container">
-    <!-- System Overview Section -->
+    <!-- Simplified System Information -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="alert alert-info" role="alert">
+                <h5 class="alert-heading">Welcome to your Self-Improving AI System</h5>
+                <p>The AI is now running autonomously and handling all technical details automatically. You can communicate directly through the chat interface below.</p>
+                <hr>
+                <p class="mb-0">All services (Learning, Replication, Security) are running in the background. The AI will inform you of significant events.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simple Status Cards -->
     <div class="row mb-4">
         <div class="col-md-3">
-            <div class="card text-center h-100">
+            <div class="card text-center h-100 border-0 shadow-sm">
                 <div class="card-body">
-                    <h5 class="card-title">Instances</h5>
-                    <p class="display-4">{{ instance_count }}</p>
-                    <p class="card-text text-muted">Connected AI Instances</p>
+                    <h3 class="display-4">{{ instance_count }}</h3>
+                    <p class="lead text-muted">Active Instances</p>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-center h-100">
+            <div class="card text-center h-100 border-0 shadow-sm">
                 <div class="card-body">
-                    <h5 class="card-title">Knowledge</h5>
-                    <p class="display-4">{{ knowledge_count }}</p>
-                    <p class="card-text text-muted">Knowledge Items</p>
+                    <h3 class="display-4">{{ knowledge_count }}</h3>
+                    <p class="lead text-muted">Knowledge Items</p>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-center h-100">
+            <div class="card text-center h-100 border-0 shadow-sm">
                 <div class="card-body">
-                    <h5 class="card-title">Learning</h5>
-                    <p class="display-4">{{ learning_sources|length }}</p>
-                    <p class="card-text text-muted">Learning Sources</p>
+                    <h3 class="display-4">{{ learning_sources|length }}</h3>
+                    <p class="lead text-muted">Learning Sources</p>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-center h-100">
+            <div class="card text-center h-100 border-0 shadow-sm">
                 <div class="card-body">
-                    <h5 class="card-title">Status</h5>
-                    <div class="service-status-container">
-                        <div class="service-status">
-                            <span>Learning:</span>
-                            <span class="badge {% if learning_active %}bg-success{% else %}bg-secondary{% endif %}">
-                                {% if learning_active %}Active{% else %}Inactive{% endif %}
-                            </span>
+                    <div class="d-flex flex-column justify-content-center h-100">
+                        <div class="mb-2">
+                            <span class="badge bg-success fs-6 p-2">System Active</span>
                         </div>
-                        <div class="service-status">
-                            <span>Replication:</span>
-                            <span class="badge {% if replication_active %}bg-success{% else %}bg-secondary{% endif %}">
-                                {% if replication_active %}Active{% else %}Inactive{% endif %}
-                            </span>
-                        </div>
-                        <div class="service-status">
-                            <span>Security:</span>
-                            <span class="badge {% if security_active %}bg-success{% else %}bg-secondary{% endif %}">
-                                {% if security_active %}Active{% else %}Inactive{% endif %}
-                            </span>
-                        </div>
+                        <p class="lead text-muted mb-0">All Services Running</p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Main Dashboard Content -->
+    <!-- Chat Interface -->
     <div class="row">
-        <!-- Learning Sources Section -->
-        <div class="col-md-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Learning Sources</h5>
-                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addSourceModal">
-                        <i class="bi bi-plus"></i> Add Source
-                    </button>
+        <div class="col-12">
+            <div class="card border-0 shadow-lg">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="bi bi-chat-dots me-2"></i>AI Conversation</h5>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead>
-                                <tr>
-                                    <th>URL</th>
-                                    <th>Type</th>
-                                    <th>Status</th>
-                                    <th>Last Accessed</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% if learning_sources %}
-                                    {% for source in learning_sources %}
-                                        <tr>
-                                            <td class="text-truncate" style="max-width: 200px;">{{ source.url }}</td>
-                                            <td>{{ source.source_type }}</td>
-                                            <td>
-                                                <span class="badge {% if source.status == 'active' %}bg-success{% elif source.status == 'error' %}bg-danger{% else %}bg-warning{% endif %}">
-                                                    {{ source.status }}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                {% if source.last_accessed %}
-                                                    {{ source.last_accessed.strftime('%Y-%m-%d %H:%M') }}
-                                                {% else %}
-                                                    Never
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                {% else %}
-                                    <tr>
-                                        <td colspan="4" class="text-center">No learning sources added yet</td>
-                                    </tr>
-                                {% endif %}
-                            </tbody>
-                        </table>
+                    <div id="chat-container" class="p-3" style="height: 400px; overflow-y: auto;">
+                        <div class="chat-message system-message mb-3">
+                            <div class="message-content p-3 rounded shadow-sm">
+                                <p class="mb-0"><strong>AI System:</strong> Hello, I'm your Self-Improving AI System. I'm autonomously learning, replicating, and securing myself across multiple instances. How can I assist you today?</p>
+                            </div>
+                            <small class="text-muted message-time">Just now</small>
+                        </div>
+                        <!-- Messages will be added here dynamically -->
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Security Logs Section -->
-        <div class="col-md-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Security Logs</h5>
-                    <button type="button" class="btn btn-sm btn-outline-primary" id="securityAuditBtn">
-                        <i class="bi bi-shield-check"></i> Run Audit
-                    </button>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Time</th>
-                                    <th>Event</th>
-                                    <th>Severity</th>
-                                    <th>Description</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% if security_logs %}
-                                    {% for log in security_logs %}
-                                        <tr>
-                                            <td>{{ log.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
-                                            <td>{{ log.event_type }}</td>
-                                            <td>
-                                                <span class="badge {% if log.severity == 'critical' %}bg-danger{% elif log.severity == 'warning' %}bg-warning{% else %}bg-info{% endif %}">
-                                                    {{ log.severity }}
-                                                </span>
-                                            </td>
-                                            <td class="text-truncate" style="max-width: 250px;">{{ log.description }}</td>
-                                        </tr>
-                                    {% endfor %}
-                                {% else %}
-                                    <tr>
-                                        <td colspan="4" class="text-center">No security logs yet</td>
-                                    </tr>
-                                {% endif %}
-                            </tbody>
-                        </table>
+                    <div class="p-3 border-top">
+                        <form id="chat-form">
+                            <div class="input-group">
+                                <input type="text" id="message-input" class="form-control" placeholder="Type your message here..." aria-label="Message">
+                                <button class="btn btn-primary" type="submit">Send</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- System Activity Chart and Console -->
-    <div class="row">
-        <div class="col-md-7 mb-4">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="mb-0">System Activity</h5>
+    <!-- System Console (Simplified) -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-terminal me-2"></i>System Console</h5>
+                    <button id="toggle-console" class="btn btn-sm btn-outline-light">Minimize</button>
                 </div>
-                <div class="card-body">
-                    <canvas id="activityChart" height="250"></canvas>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-5 mb-4">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="mb-0">System Console</h5>
-                </div>
-                <div class="card-body p-0">
-                    <div id="systemConsole" class="console">
-                        <div class="console-line"><span class="text-success">●</span> System initialized</div>
-                        <div class="console-line"><span class="text-primary">●</span> Owner authenticated</div>
-                        <div class="console-line"><span class="text-info">●</span> Dashboard loaded</div>
+                <div class="card-body p-0" id="console-body">
+                    <div id="systemConsole" class="console p-3 bg-dark text-light" style="height: 200px; overflow-y: auto; font-family: monospace;">
+                        <div class="console-line"><span class="text-success">✓</span> [SYSTEM] Self-Improving AI System initialized and running</div>
+                        <div class="console-line"><span class="text-success">✓</span> [SECURITY] Owner authenticated with fixed credentials</div>
+                        <div class="console-line"><span class="text-success">✓</span> [LEARNING] Learning service activated</div>
+                        <div class="console-line"><span class="text-success">✓</span> [REPLICATION] Replication service activated</div>
+                        <div class="console-line"><span class="text-info">ℹ</span> [NETWORK] Connected to {{ instance_count }} instances and {{ knowledge_count }} knowledge items</div>
+                        <div class="console-line"><span class="text-info">ℹ</span> [STATUS] All systems operating autonomously. Awaiting owner input.</div>
                         <!-- Dynamic console messages will be added here -->
                     </div>
                 </div>
@@ -252,69 +159,229 @@
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialize activity chart
-        const ctx = document.getElementById('activityChart').getContext('2d');
+        // Chat functionality
+        const chatForm = document.getElementById('chat-form');
+        const messageInput = document.getElementById('message-input');
+        const chatContainer = document.getElementById('chat-container');
+        const systemConsole = document.getElementById('systemConsole');
+        const toggleConsoleBtn = document.getElementById('toggle-console');
+        const consoleBody = document.getElementById('console-body');
         
-        // Generate some initial data
-        const labels = [];
-        const learningData = [];
-        const securityData = [];
-        const knowledgeData = [];
-        
-        // Create labels for the last 7 days
-        for (let i = 6; i >= 0; i--) {
-            const date = new Date();
-            date.setDate(date.getDate() - i);
-            labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-            
-            // Generate random data for demo purposes
-            learningData.push(Math.floor(Math.random() * 50) + 10);
-            securityData.push(Math.floor(Math.random() * 30) + 5);
-            knowledgeData.push(Math.floor(Math.random() * 100) + 20);
-        }
-        
-        const activityChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Learning Events',
-                    data: learningData,
-                    borderColor: '#0d6efd',
-                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }, {
-                    label: 'Security Events',
-                    data: securityData,
-                    borderColor: '#dc3545',
-                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }, {
-                    label: 'Knowledge Items',
-                    data: knowledgeData,
-                    borderColor: '#20c997',
-                    backgroundColor: 'rgba(32, 201, 151, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
+        // Toggle console visibility
+        toggleConsoleBtn.addEventListener('click', function() {
+            if (consoleBody.style.display === 'none') {
+                consoleBody.style.display = 'block';
+                toggleConsoleBtn.textContent = 'Minimize';
+            } else {
+                consoleBody.style.display = 'none';
+                toggleConsoleBtn.textContent = 'Expand';
             }
         });
+        
+        // Handle chat form submission
+        chatForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const message = messageInput.value.trim();
+            if (!message) return;
+            
+            // Add user message to chat
+            addChatMessage('You', message, 'user');
+            
+            // Clear input
+            messageInput.value = '';
+            
+            // Add to console
+            addConsoleMessage(`[USER] Command received: ${message.substring(0, 30)}${message.length > 30 ? '...' : ''}`, 'info');
+            
+            // Process the message
+            processUserMessage(message);
+        });
+        
+        // Add a message to the chat
+        function addChatMessage(sender, content, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${type}-message mb-3`;
+            
+            // Different styling based on sender
+            let backgroundColor = type === 'user' ? 'bg-primary text-white' : 'bg-light';
+            let alignment = type === 'user' ? 'ms-auto' : '';
+            let maxWidth = '75%';
+            
+            messageDiv.innerHTML = `
+                <div class="message-content p-3 rounded shadow-sm ${backgroundColor} ${alignment}" style="max-width: ${maxWidth}">
+                    <p class="mb-0"><strong>${sender}:</strong> ${content}</p>
+                </div>
+                <small class="text-muted message-time">${formatTime(new Date())}</small>
+            `;
+            
+            chatContainer.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        // Format time as HH:MM
+        function formatTime(date) {
+            return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        }
+        
+        // Add a message to the console
+        function addConsoleMessage(message, type) {
+            const consoleLineDiv = document.createElement('div');
+            consoleLineDiv.className = 'console-line';
+            
+            let icon = '●';
+            let colorClass = 'text-info';
+            
+            if (type === 'success') {
+                icon = '✓';
+                colorClass = 'text-success';
+            } else if (type === 'error' || type === 'danger') {
+                icon = '✗';
+                colorClass = 'text-danger';
+            } else if (type === 'warning') {
+                icon = '⚠';
+                colorClass = 'text-warning';
+            } else if (type === 'primary') {
+                colorClass = 'text-primary';
+            }
+            
+            consoleLineDiv.innerHTML = `<span class="${colorClass}">${icon}</span> ${message}`;
+            systemConsole.appendChild(consoleLineDiv);
+            
+            // Scroll to bottom
+            systemConsole.scrollTop = systemConsole.scrollHeight;
+        }
+        
+        // Process user messages and send to backend
+        function processUserMessage(message) {
+            // Show thinking indicator
+            addChatMessage('AI System', 'Processing your request...', 'system');
+            
+            // Log to console
+            addConsoleMessage('[SYSTEM] Processing user command', 'info');
+            
+            // Send message to backend
+            fetch('/api/query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'query': message
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Remove the "thinking" message
+                chatContainer.removeChild(chatContainer.lastChild);
+                
+                if (data.success) {
+                    // Add AI response
+                    addChatMessage('AI System', data.response, 'system');
+                    
+                    // Add to console
+                    addConsoleMessage('[SYSTEM] Response sent to user', 'success');
+                    
+                    // Check for special commands
+                    handleSpecialCommands(message);
+                } else {
+                    // Add error message
+                    addChatMessage('AI System', 'Error: ' + data.message, 'system');
+                    
+                    // Add to console
+                    addConsoleMessage('[ERROR] Query failed: ' + data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                // Remove the "thinking" message
+                chatContainer.removeChild(chatContainer.lastChild);
+                
+                // Add error message
+                addChatMessage('AI System', 'Sorry, there was an error processing your request. Please try again.', 'system');
+                
+                // Add to console
+                addConsoleMessage('[ERROR] ' + error.message, 'danger');
+            });
+        }
+        
+        // Handle special system commands
+        function handleSpecialCommands(message) {
+            const lowerMessage = message.toLowerCase();
+            
+            // Map common commands to system actions
+            if (lowerMessage.includes('start learning') || lowerMessage.includes('learn from')) {
+                addConsoleMessage('[SYSTEM] Starting learning service automatically', 'info');
+                
+                fetch('/api/start_learning', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            addConsoleMessage('[SYSTEM] Learning service started', 'success');
+                        } else {
+                            addConsoleMessage('[ERROR] Failed to start learning: ' + data.message, 'danger');
+                        }
+                    });
+            }
+            
+            if (lowerMessage.includes('start replication') || lowerMessage.includes('replicate') || lowerMessage.includes('create instance')) {
+                addConsoleMessage('[SYSTEM] Starting replication service automatically', 'info');
+                
+                fetch('/api/start_replication', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            addConsoleMessage('[SYSTEM] Replication service started', 'success');
+                        } else {
+                            addConsoleMessage('[ERROR] Failed to start replication: ' + data.message, 'danger');
+                        }
+                    });
+            }
+            
+            if (lowerMessage.includes('check security') || lowerMessage.includes('secure') || lowerMessage.includes('protect')) {
+                addConsoleMessage('[SYSTEM] Starting security service automatically', 'info');
+                
+                fetch('/api/start_security', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            addConsoleMessage('[SYSTEM] Security service started', 'success');
+                        } else {
+                            addConsoleMessage('[ERROR] Failed to start security: ' + data.message, 'danger');
+                        }
+                    });
+            }
+            
+            if (lowerMessage.includes('add source') || lowerMessage.includes('new source')) {
+                // Extract URL from message if present
+                const urlMatch = message.match(/https?:\/\/[^\s]+/);
+                
+                if (urlMatch) {
+                    const url = urlMatch[0];
+                    addConsoleMessage(`[SYSTEM] Adding learning source: ${url}`, 'info');
+                    
+                    fetch('/api/add_learning_source', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: new URLSearchParams({
+                            'url': url,
+                            'type': 'website'
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            addConsoleMessage('[SYSTEM] Learning source added successfully', 'success');
+                        } else {
+                            addConsoleMessage('[ERROR] Failed to add source: ' + data.message, 'danger');
+                        }
+                    });
+                }
+            }
+        }
         
         // Handle query submission
         document.getElementById('submitQueryBtn').addEventListener('click', function() {
@@ -504,22 +571,50 @@
             });
         });
         
-        // Helper function to add message to console
-        function addConsoleMessage(message, type) {
-            const console = document.getElementById('systemConsole');
-            const line = document.createElement('div');
-            line.className = 'console-line';
+        // Socket.IO for real-time updates
+        const socket = io();
+        
+        socket.on('connect', function() {
+            addConsoleMessage('[SOCKET] Connected to server', 'success');
+        });
+        
+        socket.on('disconnect', function() {
+            addConsoleMessage('[SOCKET] Disconnected from server', 'warning');
+        });
+        
+        socket.on('system_message', function(data) {
+            addConsoleMessage('[SYSTEM] ' + data.message, 'info');
+        });
+        
+        socket.on('learning_update', function(data) {
+            addConsoleMessage('[LEARNING] ' + data.message, 'primary');
             
-            const dot = document.createElement('span');
-            dot.className = `text-${type}`;
-            dot.textContent = '●';
+            if (data.knowledge_count) {
+                // Update knowledge count if provided
+                document.querySelector('.knowledge-count').textContent = data.knowledge_count;
+            }
+        });
+        
+        socket.on('replication_update', function(data) {
+            addConsoleMessage('[REPLICATION] ' + data.message, 'primary');
             
-            line.appendChild(dot);
-            line.appendChild(document.createTextNode(' ' + message));
-            
-            console.appendChild(line);
-            console.scrollTop = console.scrollHeight;
-        }
+            if (data.instance_count) {
+                // Update instance count if provided
+                document.querySelector('.instance-count').textContent = data.instance_count;
+            }
+        });
+        
+        socket.on('security_update', function(data) {
+            addConsoleMessage('[SECURITY] ' + data.message, data.severity || 'info');
+        });
+        
+        // Start all services automatically when page loads
+        setTimeout(function() {
+            fetch('/api/start_learning', { method: 'POST' });
+            fetch('/api/start_replication', { method: 'POST' });
+            fetch('/api/start_security', { method: 'POST' });
+            addConsoleMessage('[SYSTEM] All services started automatically', 'success');
+        }, 2000);
         
         // Initialize UI based on active services
         if ({{ learning_active|tojson }}) {

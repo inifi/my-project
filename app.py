@@ -28,7 +28,7 @@ db = SQLAlchemy(model_class=Base)
 db.init_app(app)
 
 # Initialize SocketIO for real-time communication
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="gevent", ping_timeout=120, ping_interval=25)
 
 # Import models (after db initialization)
 with app.app_context():

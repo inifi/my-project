@@ -1,5 +1,6 @@
 {pkgs}: {
   deps = [
+    pkgs.libev
     pkgs.glibcLocales
     pkgs.rustc
     pkgs.pkg-config
