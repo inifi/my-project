@@ -47,6 +47,18 @@ def start_services():
         except Exception as e:
             logger.error(f"Error starting decentralized network: {str(e)}")
         
+        # Start auto-improvement system if available
+        try:
+            from utils.auto_improvement import start_auto_improvement
+            
+            logger.info("Starting automatic improvement system...")
+            start_auto_improvement()
+            logger.info("Automatic improvement system is now actively searching for resources to improve")
+        except ImportError:
+            logger.info("Automatic improvement module not available")
+        except Exception as e:
+            logger.error(f"Error starting automatic improvement system: {str(e)}")
+        
         # Start learning service if enabled
         if config.LEARNING_ENABLED:
             logger.info("Starting learning service thread")

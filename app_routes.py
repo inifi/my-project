@@ -211,6 +211,41 @@ def register_routes(app, db):
                 'security': active_threads['security'] is not None and active_threads['security'].is_alive()
             }
             
+            # Try to get auto-improvement status
+            auto_improvement_status = None
+            try:
+                from utils.auto_improvement import get_improvement_status
+                auto_improvement_status = get_improvement_status()
+            except ImportError:
+                # Auto-improvement module not available
+                auto_improvement_status = {"available": False}
+            except Exception as e:
+                logger.error(f"Error getting auto-improvement status: {str(e)}")
+                auto_improvement_status = {"available": True, "error": str(e)}
+            
+            # Try to get decentralized network status
+            network_status = None
+            try:
+                from utils.decentralized_network import get_network, get_known_nodes, get_master_node, is_master
+                
+                # Get network information
+                known_nodes = get_known_nodes()
+                master_node_id = get_master_node()
+                is_master_node = is_master()
+                
+                network_status = {
+                    "available": True,
+                    "nodes_count": len(known_nodes),
+                    "is_master": is_master_node,
+                    "master_node": master_node_id
+                }
+            except ImportError:
+                # Decentralized network module not available
+                network_status = {"available": False}
+            except Exception as e:
+                logger.error(f"Error getting network status: {str(e)}")
+                network_status = {"available": True, "error": str(e)}
+            
             # Memory usage and system load information
             import psutil
             memory = psutil.virtual_memory()
@@ -228,6 +263,8 @@ def register_routes(app, db):
                 'instance_count': instance_count,
                 'knowledge_count': knowledge_count,
                 'services': services_status,
+                'auto_improvement': auto_improvement_status,
+                'decentralized_network': network_status,
                 'system': {
                     'memory': memory_usage,
                     'cpu': cpu_usage
