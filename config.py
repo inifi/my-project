@@ -36,7 +36,7 @@ AUTH_USERNAME = "NOBODY"
 AUTH_PASSWORD = "ONEWORLD"
 
 # Database settings
-DATABASE_URI = os.environ.get("DATABASE_URL", "sqlite:///./instance/ai_system.db")
+DATABASE_URI = os.environ.get("DATABASE_URL", "sqlite:////tmp/ai_system.db")
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 # API Keys with fallbacks to environment variables

@@ -12,11 +12,23 @@ import threading
 import config
 from werkzeug.security import check_password_hash, generate_password_hash
 
-# Make sure the instance directory exists
+# Make sure the instance directory exists and is accessible
 instance_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
 if not os.path.exists(instance_dir):
     os.makedirs(instance_dir)
     print(f"Created instance directory at {instance_dir}")
+
+# Check permissions on instance directory and database file
+db_file = os.path.join(instance_dir, 'ai_system.db')
+if os.path.exists(db_file):
+    # Ensure the database file is writable
+    os.chmod(db_file, 0o666)
+    print(f"Updated permissions for database file: {db_file}")
+
+# Set current working directory to the script directory
+# This ensures relative paths work correctly
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+print(f"Changed working directory to: {os.getcwd()}")
 
 
 class Base(DeclarativeBase):
@@ -39,10 +51,21 @@ db.init_app(app)
 # Initialize SocketIO for real-time communication
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="gevent", ping_timeout=120, ping_interval=25)
 
+# Additional debug logging for database connection
+logger = logging.getLogger(__name__)
+logger.info(f"Database URI: {app.config['SQLALCHEMY_DATABASE_URI']}")
+logger.info(f"Database options: {app.config['SQLALCHEMY_ENGINE_OPTIONS']}")
+
 # Import models (after db initialization)
-with app.app_context():
-    from models import User, Instance, KnowledgeBase, LearningSource, SecurityLog
-    db.create_all()
+try:
+    with app.app_context():
+        from models import User, Instance, KnowledgeBase, LearningSource, SecurityLog
+        
+        # Create database tables if they don't exist
+        db.create_all()
+        logger.info("Database tables created successfully")
+except Exception as e:
+    logger.error(f"Error initializing database: {str(e)}")
 
 # Import utility modules after db is initialized
 from utils.auth import verify_owner, generate_auth_token, verify_auth_token

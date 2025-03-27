@@ -27,36 +27,29 @@ except ImportError:
 
 def get_db_path():
     """Get the database path from configuration"""
-    from app import app
-    db_uri = app.config['SQLALCHEMY_DATABASE_URI'].replace('sqlite:///', '')
+    # Ensure instance directory exists
+    instance_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
+    if not os.path.exists(instance_dir):
+        os.makedirs(instance_dir)
+        logger.info(f"Created instance directory at {instance_dir}")
     
-    # Check if path is relative or absolute
-    if db_uri.startswith('/'):
+    # Get database URI from app config
+    try:
+        from app import app
+        db_uri = app.config['SQLALCHEMY_DATABASE_URI'].replace('sqlite:///', '')
+    except Exception as e:
+        logger.warning(f"Could not get database URI from app config: {e}")
+        # Default to instance/ai_system.db
+        db_uri = os.path.join('instance', 'ai_system.db')
+    
+    # Create the full path to the database file
+    if os.path.isabs(db_uri):
         return db_uri
     else:
-        # Check for instance folder
-        instance_path = os.path.join('instance', db_uri)
-        if os.path.exists(instance_path):
-            return instance_path
-        # Check in current directory
-        elif os.path.exists(db_uri):
-            return db_uri
-        else:
-            # Still not found, try some common locations
-            common_paths = [
-                os.path.join('instance', 'ai_system.db'),
-                'ai_system.db',
-                os.path.join('instance', 'site.db'),
-                'site.db'
-            ]
-            
-            for path in common_paths:
-                if os.path.exists(path):
-                    logger.info(f"Found database at {path}")
-                    return path
-            
-            logger.error("Could not find database file")
-            return db_uri
+        # Create the full path, ensuring parent directory exists
+        full_path = os.path.abspath(db_uri)
+        os.makedirs(os.path.dirname(full_path), exist_ok=True)
+        return full_path
 
 def backup_database(db_path):
     """Create a backup of the database before modifications"""
@@ -216,10 +209,16 @@ def main():
     try:
         # Get database path
         db_path = get_db_path()
+        logger.info(f"Using database path: {db_path}")
         
+        # Create empty database file if it doesn't exist
         if not os.path.exists(db_path):
-            logger.error(f"Database file not found at {db_path}")
-            return False
+            logger.info(f"Creating new database file at {db_path}")
+            # Create parent directory if it doesn't exist
+            os.makedirs(os.path.dirname(os.path.abspath(db_path)), exist_ok=True)
+            # Create empty file
+            with open(db_path, 'w') as f:
+                pass
             
         # Create a backup
         backup_path = backup_database(db_path)
