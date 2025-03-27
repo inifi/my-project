@@ -3,6 +3,7 @@ import logging
 import time
 import random
 import hashlib
+import uuid
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, g
 from flask_sqlalchemy import SQLAlchemy
@@ -12,6 +13,7 @@ from flask_login import LoginManager, login_user, logout_user, current_user, log
 import threading
 import config
 from werkzeug.security import check_password_hash, generate_password_hash
+from app_routes import generate_auth_token
 
 # Make sure the instance directory exists and is accessible
 instance_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
@@ -239,18 +241,33 @@ def auth():
                     db.session.add(log_entry)
                     db.session.commit()
                     
+                    # Check if remember me option is selected
+                    remember_me = request.form.get('remember_me') == 'on'
+                    
                     # Set session variables
                     session['user_id'] = owner.id
                     session['auth_time'] = datetime.utcnow().timestamp()
                     session['fingerprint'] = hashlib.sha256(f"{request.user_agent}{request.remote_addr}".encode()).hexdigest()
                     
-                    # Use Flask-Login to log in the user
-                    login_user(owner, remember=True)
+                    # Set session to be permanent with a longer lifetime if remember me is checked
+                    if remember_me:
+                        session.permanent = True
+                        app.permanent_session_lifetime = timedelta(days=30)  # 30 days
+                    else:
+                        session.permanent = True
+                        app.permanent_session_lifetime = timedelta(hours=24)  # 24 hours
                     
-                    # Generate an API token for persistent sessions
+                    # Use Flask-Login to log in the user
+                    login_user(owner, remember=remember_me)
+                    
+                    # Store initial activity timestamp
+                    session['last_activity'] = datetime.utcnow().isoformat()
+                    
+                    # Generate an API token for persistent sessions with extended expiry for remember me
                     auth_token = generate_auth_token(owner.id)
                     session['auth_token'] = auth_token
-                    session['auth_expiry'] = (datetime.utcnow() + timedelta(hours=1)).isoformat()
+                    token_expiry = timedelta(days=30) if remember_me else timedelta(hours=24)
+                    session['auth_expiry'] = (datetime.utcnow() + token_expiry).isoformat()
                     
                     return redirect(url_for('dashboard'))
                 else:
