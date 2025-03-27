@@ -360,3 +360,4 @@ def get_mac_address(interface):
         return ':'.join('%02x' % b for b in info[18:24])
     except:
         return None
+

@@ -153,47 +153,66 @@ def randomize_resource_usage(cpu_variance, memory_variance):
         cpu_variance: Percentage points of CPU usage to vary
         memory_variance: Percentage points of memory usage to vary
     """
-    # This is a simplified simulation of resource usage variation
+    import time
+    import random
+    import threading
     
-    # Decide whether to increase or decrease resource usage
-    direction = random.choice([-1, 1])
+    def cpu_load_simulation(duration, intensity):
+        """
+        Simulate CPU load for a specified duration and intensity
+        
+        Args:
+            duration: Duration in seconds
+            intensity: 0-100 intensity percentage
+        """
+        end_time = time.time() + duration
+        while time.time() < end_time:
+            # Adjust work cycles based on intensity
+            work_cycles = int(10000 * (intensity / 100))
+            # Perform some meaningless calculations to use CPU
+            for _ in range(work_cycles):
+                _ = [i * i for i in range(100)]
+            # Sleep to allow other processes to run
+            time.sleep(0.01)
     
-    if direction > 0:
-        # Increase resource usage
-        try:
-            # Create some CPU load
-            if random.random() < 0.3:  # 30% chance
-                duration = random.uniform(0.1, 0.5)
-                end_time = time.time() + duration
-                
-                # Burn some CPU cycles
-                logger.debug(f"Increasing CPU usage for {duration:.2f} seconds")
-                while time.time() < end_time:
-                    # Perform meaningless calculations
-                    for i in range(10000):
-                        x = i * i / 1.1
-                
-                # Allocate some memory
-                if random.random() < 0.2:  # 20% chance
-                    size = int(random.uniform(1, 10) * 1024 * 1024)  # 1-10 MB
-                    logger.debug(f"Allocating {size/1024/1024:.2f} MB of memory")
-                    data = bytearray(size)
-                    time.sleep(0.5)  # Hold for half a second
-                    # The memory will be released when this function returns
-        except:
-            pass
-    else:
-        # Decrease resource usage
-        try:
-            # Sleep to reduce CPU usage
-            time.sleep(random.uniform(0.5, 2.0))
-            
-            # Suggest garbage collection
-            if random.random() < 0.1:  # 10% chance
-                import gc
-                gc.collect()
-        except:
-            pass
+    def memory_load_simulation(size_mb, duration):
+        """
+        Simulate memory usage for a specified duration
+        
+        Args:
+            size_mb: Size in MB to allocate
+            duration: Duration in seconds to hold the memory
+        """
+        # Allocate memory (1MB chunks)
+        data = []
+        for _ in range(size_mb):
+            # Each tuple is approximately 1MB
+            data.append(bytearray(1024 * 1024))
+        # Hold for duration
+        time.sleep(duration)
+        # Free memory by deleting references
+        del data
+    
+    # Determine random values within variance
+    cpu_intensity = random.uniform(0, cpu_variance)
+    memory_size = random.uniform(0, memory_variance)
+    
+    # Randomize duration between 1-5 seconds
+    duration = random.uniform(1, 5)
+    
+    # Start separate threads for CPU and memory simulation
+    # to avoid blocking the main process
+    threading.Thread(
+        target=cpu_load_simulation,
+        args=(duration, cpu_intensity),
+        daemon=True
+    ).start()
+    
+    threading.Thread(
+        target=memory_load_simulation,
+        args=(int(memory_size), duration),
+        daemon=True
+    ).start()
 
 def perform_security_audit(app, socketio=None):
     """
