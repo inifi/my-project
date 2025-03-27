@@ -71,6 +71,15 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"Error initializing enhanced security: {str(e)}")
     
+    # Register additional API routes
+    try:
+        from app_routes import register_routes
+        from app import db
+        register_routes(app, db)
+        logger.info("Additional API routes registered successfully")
+    except Exception as e:
+        logger.error(f"Error registering additional routes: {str(e)}")
+    
     # Start background services in a separate thread
     services_thread = threading.Thread(target=start_services, daemon=True)
     services_thread.start()

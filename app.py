@@ -4,10 +4,11 @@ import time
 import random
 import hashlib
 from datetime import datetime, timedelta
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, g
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from flask_socketio import SocketIO
+from flask_login import LoginManager, login_user, logout_user, current_user, login_required, UserMixin
 import threading
 import config
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -50,6 +51,20 @@ db.init_app(app)
 
 # Initialize SocketIO for real-time communication
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="gevent", ping_timeout=120, ping_interval=25)
+
+# Initialize Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'auth'
+
+@login_manager.user_loader
+def load_user(user_id):
+    try:
+        from models import User
+        return User.query.get(int(user_id))
+    except Exception as e:
+        logger.error(f"Error loading user: {str(e)}")
+        return None
 
 # Additional debug logging for database connection
 logger = logging.getLogger(__name__)
