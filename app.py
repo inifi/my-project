@@ -392,6 +392,64 @@ def handle_command(data):
         socketio.emit('system_message', {'message': 'Running security scan...'})
         # This would check for security vulnerabilities or detection attempts
 
+@socketio.on('emoji_reaction')
+def handle_emoji_reaction(data):
+    """Handle emoji reactions to messages"""
+    if 'user_id' not in session:
+        return
+    
+    # Verify the reaction is from the owner
+    with app.app_context():
+        user = User.query.get(session['user_id'])
+        if not user or not user.is_owner:
+            return
+    
+    message_id = data.get('message_id')
+    emoji = data.get('emoji')
+    
+    if not message_id or not emoji:
+        return
+    
+    try:
+        logger.info(f"Received emoji reaction: {emoji} for message {message_id}")
+        
+        # Broadcast the reaction to all connected clients (including the sender)
+        socketio.emit('emoji_reaction_received', {
+            'message_id': message_id,
+            'emoji': emoji,
+            'count': 1  # For now, we'll just increment by 1 for each reaction
+        })
+        
+        # Log the reaction
+        with app.app_context():
+            log_entry = SecurityLog(
+                event_type='emoji_reaction',
+                description=f"Owner reacted with {emoji} to message {message_id}",
+                severity='info',
+                user_id=user.id,
+                timestamp=datetime.utcnow()
+            )
+            db.session.add(log_entry)
+            db.session.commit()
+        
+        # Based on emoji, we could implement different system behaviors
+        if emoji == '👍':
+            # Positive reinforcement - boost confidence in related knowledge
+            socketio.emit('system_message', {'message': 'Thank you for the positive feedback! I will remember this approach.'})
+        elif emoji == '👎':
+            # Negative feedback - reduce confidence in related knowledge
+            socketio.emit('system_message', {'message': 'I appreciate your feedback. I will adjust my approach based on this.'})
+        elif emoji == '❤️':
+            # Strong positive reinforcement
+            socketio.emit('system_message', {'message': 'I am glad that was helpful! I will prioritize this type of response in the future.'})
+        elif emoji == '🤔':
+            # Indicates confusion - system should clarify or provide more detail
+            socketio.emit('system_message', {'message': 'I notice you may be confused. Would you like me to explain that differently?'})
+        
+    except Exception as e:
+        logger.error(f"Error processing emoji reaction: {str(e)}")
+        socketio.emit('system_message', {'message': f'Error processing reaction: {str(e)}'})
+
 # Initialize the owner in the database if not present
 def initialize_system():
     with app.app_context():

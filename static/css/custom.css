@@ -1,5 +1,59 @@
 /* Custom CSS for Self-Improving AI System */
 
+/* Emoji Reaction Styles */
+.message-reactions {
+    margin-top: 0.25rem;
+}
+
+.reaction-btn {
+    padding: 0.1rem 0.4rem;
+    border-radius: 15px;
+    font-size: 0.95rem;
+    transition: all 0.15s ease;
+    border-width: 1px;
+    background-color: transparent;
+}
+
+.reaction-btn:hover {
+    transform: scale(1.1);
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.reaction-btn.active {
+    background-color: #f1f3f5;
+    border-color: #6c757d;
+}
+
+.reaction-positive.active {
+    border-color: #198754;
+    color: #198754;
+}
+
+.reaction-negative.active {
+    border-color: #dc3545;
+    color: #dc3545;
+}
+
+.reaction-love.active {
+    border-color: #e83e8c;
+    color: #e83e8c;
+}
+
+.reaction-confused.active {
+    border-color: #fd7e14;
+    color: #fd7e14;
+}
+
+.reaction-count {
+    font-size: 0.75rem;
+    margin-left: 0.2rem;
+    vertical-align: middle;
+}
+
+.emoji {
+    margin-right: 0.15rem;
+}
+
 /* Global Styles */
 :root {
     --console-bg: #1a1d20;

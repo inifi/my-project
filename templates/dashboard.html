@@ -466,17 +466,69 @@
             const messageDiv = document.createElement('div');
             messageDiv.className = `chat-message ${type}-message mb-3`;
             
+            // Generate a unique ID for this message
+            const messageId = 'msg-' + new Date().getTime() + '-' + Math.floor(Math.random() * 1000);
+            messageDiv.id = messageId;
+            
             // Different styling based on sender
             let backgroundColor = type === 'user' ? 'bg-primary text-white' : 'bg-light';
             let alignment = type === 'user' ? 'ms-auto' : '';
             let maxWidth = '75%';
             
+            // Base message HTML
             messageDiv.innerHTML = `
                 <div class="message-content p-3 rounded shadow-sm ${backgroundColor} ${alignment}" style="max-width: ${maxWidth}">
                     <p class="mb-0"><strong>${sender}:</strong> ${content}</p>
                 </div>
                 <small class="text-muted message-time">${formatTime(new Date())}</small>
             `;
+            
+            // Add emoji reaction buttons for AI messages only (not user messages)
+            if (type === 'system') {
+                const emojiContainer = document.createElement('div');
+                emojiContainer.className = 'message-reactions mt-1 d-flex gap-1';
+                
+                // Define emoji reactions
+                const emojis = [
+                    { emoji: '👍', tooltip: 'Good response', class: 'reaction-positive' },
+                    { emoji: '👎', tooltip: 'Bad response', class: 'reaction-negative' },
+                    { emoji: '❤️', tooltip: 'Love this response', class: 'reaction-love' },
+                    { emoji: '🤔', tooltip: 'Confusing response', class: 'reaction-confused' }
+                ];
+                
+                // Create emoji reaction buttons
+                emojis.forEach(item => {
+                    const button = document.createElement('button');
+                    button.className = `btn btn-sm btn-outline-secondary reaction-btn ${item.class}`;
+                    button.setAttribute('data-message-id', messageId);
+                    button.setAttribute('data-emoji', item.emoji);
+                    button.setAttribute('title', item.tooltip);
+                    button.innerHTML = `
+                        <span class="emoji">${item.emoji}</span>
+                        <span class="reaction-count d-none">0</span>
+                    `;
+                    
+                    // Add click event
+                    button.addEventListener('click', function() {
+                        const messageId = this.getAttribute('data-message-id');
+                        const emoji = this.getAttribute('data-emoji');
+                        sendEmojiReaction(messageId, emoji);
+                        
+                        // Visual feedback (add 'active' class)
+                        this.classList.add('active');
+                        
+                        // Show count
+                        const countSpan = this.querySelector('.reaction-count');
+                        countSpan.classList.remove('d-none');
+                        countSpan.textContent = '1';
+                    });
+                    
+                    emojiContainer.appendChild(button);
+                });
+                
+                // Add reaction container after the timestamp
+                messageDiv.appendChild(emojiContainer);
+            }
             
             chatContainer.appendChild(messageDiv);
             
@@ -908,6 +960,38 @@
         socket.on('security_update', function(data) {
             addConsoleMessage('[SECURITY] ' + data.message, data.severity || 'info');
         });
+        
+        // Handle emoji reaction feedback
+        socket.on('emoji_reaction_received', function(data) {
+            addConsoleMessage(`[FEEDBACK] Received ${data.emoji} reaction for message ${data.message_id}`, 'primary');
+            
+            // Find the message by ID and update its reaction display
+            const messageElement = document.getElementById(data.message_id);
+            if (messageElement) {
+                // Find the specific emoji button that was clicked
+                const reactionButton = messageElement.querySelector(`button[data-emoji="${data.emoji}"]`);
+                if (reactionButton) {
+                    // Add 'active' class to the button
+                    reactionButton.classList.add('active');
+                    
+                    // Show and update count
+                    const countElement = reactionButton.querySelector('.reaction-count');
+                    countElement.classList.remove('d-none');
+                    countElement.textContent = data.count.toString();
+                }
+            }
+        });
+        
+        // Function to send emoji reactions to the server
+        function sendEmojiReaction(messageId, emoji) {
+            socket.emit('emoji_reaction', {
+                message_id: messageId,
+                emoji: emoji
+            });
+            
+            // Add console message
+            addConsoleMessage(`[FEEDBACK] Sent ${emoji} reaction for message ${messageId}`, 'info');
+        }
         
         // Start all services automatically when page loads
         setTimeout(function() {
