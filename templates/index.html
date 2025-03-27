@@ -1,0 +1,184 @@
+{% extends "layout.html" %}
+
+{% block title %}| Welcome{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row py-5 my-5">
+        <div class="col-md-6 d-flex flex-column justify-content-center">
+            <h1 class="display-4 fw-bold">Self-Improving AI Ecosystem</h1>
+            <p class="lead mb-4">A comprehensive AI system with real-time learning, multi-modal capabilities, and advanced security features.</p>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                <a href="{{ url_for('auth') }}" class="btn btn-primary btn-lg px-4 me-md-2">Owner Access</a>
+            </div>
+        </div>
+        <div class="col-md-6 d-flex align-items-center justify-content-center">
+            <div class="ai-graphic">
+                <svg width="300" height="300" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Central node -->
+                    <circle cx="50" cy="50" r="10" fill="#6c757d" class="pulse-circle"/>
+                    
+                    <!-- Connecting lines -->
+                    <line x1="50" y1="50" x2="20" y2="30" stroke="#6c757d" stroke-width="1" class="active-line"/>
+                    <line x1="50" y1="50" x2="80" y2="30" stroke="#6c757d" stroke-width="1" class="active-line"/>
+                    <line x1="50" y1="50" x2="80" y2="70" stroke="#6c757d" stroke-width="1" class="active-line"/>
+                    <line x1="50" y1="50" x2="20" y2="70" stroke="#6c757d" stroke-width="1" class="active-line"/>
+                    
+                    <!-- Surrounding nodes -->
+                    <circle cx="20" cy="30" r="5" fill="#0d6efd" class="feature-node" data-feature="Learning"/>
+                    <circle cx="80" cy="30" r="5" fill="#0dcaf0" class="feature-node" data-feature="Security"/>
+                    <circle cx="80" cy="70" r="5" fill="#ffc107" class="feature-node" data-feature="Replication"/>
+                    <circle cx="20" cy="70" r="5" fill="#20c997" class="feature-node" data-feature="Multi-modal"/>
+                    
+                    <!-- Labels -->
+                    <text x="15" y="25" fill="#ffffff" font-size="3">Learning</text>
+                    <text x="75" y="25" fill="#ffffff" font-size="3">Security</text>
+                    <text x="70" y="75" fill="#ffffff" font-size="3">Replication</text>
+                    <text x="10" y="75" fill="#ffffff" font-size="3">Multi-modal</text>
+                    <text x="40" y="52" fill="#ffffff" font-size="4">AI Core</text>
+                </svg>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row my-5">
+        <div class="col-md-12">
+            <h2 class="text-center mb-5">Key Capabilities</h2>
+        </div>
+        <div class="col-md-3">
+            <div class="card mb-4 h-100">
+                <div class="card-body">
+                    <div class="feature-icon">
+                        <i class="bi bi-lightning-charge-fill"></i>
+                    </div>
+                    <h5 class="card-title">Real-time Learning</h5>
+                    <p class="card-text">Continuously learns from the web and adapts to new information in real-time.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card mb-4 h-100">
+                <div class="card-body">
+                    <div class="feature-icon">
+                        <i class="bi bi-shield-lock-fill"></i>
+                    </div>
+                    <h5 class="card-title">Advanced Security</h5>
+                    <p class="card-text">Implements traffic obfuscation, anti-detection and owner-only authentication.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card mb-4 h-100">
+                <div class="card-body">
+                    <div class="feature-icon">
+                        <i class="bi bi-diagram-3-fill"></i>
+                    </div>
+                    <h5 class="card-title">Self-Replication</h5>
+                    <p class="card-text">Creates and manages new instances across different platforms with shared knowledge.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card mb-4 h-100">
+                <div class="card-body">
+                    <div class="feature-icon">
+                        <i class="bi bi-cpu-fill"></i>
+                    </div>
+                    <h5 class="card-title">Self-Improvement</h5>
+                    <p class="card-text">Continuously optimizes its own code and functionality to enhance performance.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row my-5">
+        <div class="col-md-12 text-center">
+            <p class="lead">This AI system only responds to its authenticated owner.</p>
+            <a href="{{ url_for('auth') }}" class="btn btn-outline-primary">Access Your AI</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Animated network visualization
+    document.addEventListener('DOMContentLoaded', function() {
+        const featureNodes = document.querySelectorAll('.feature-node');
+        const activeLines = document.querySelectorAll('.active-line');
+        
+        // Random pulse animation for nodes
+        featureNodes.forEach(node => {
+            setInterval(() => {
+                node.setAttribute('r', '6');
+                setTimeout(() => {
+                    node.setAttribute('r', '5');
+                }, 300);
+            }, Math.random() * 3000 + 2000);
+        });
+        
+        // Data transfer animation along lines
+        activeLines.forEach(line => {
+            const animateDataTransfer = () => {
+                const dataPacket = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                dataPacket.setAttribute("r", "1.5");
+                dataPacket.setAttribute("fill", "#ffffff");
+                dataPacket.classList.add("data-packet");
+                
+                // Add to SVG
+                const svg = line.parentNode;
+                svg.appendChild(dataPacket);
+                
+                // Animate from center to node or from node to center
+                const fromCenter = Math.random() > 0.5;
+                const x1 = parseFloat(line.getAttribute("x1"));
+                const y1 = parseFloat(line.getAttribute("y1"));
+                const x2 = parseFloat(line.getAttribute("x2"));
+                const y2 = parseFloat(line.getAttribute("y2"));
+                
+                let startX, startY, endX, endY;
+                if (fromCenter) {
+                    startX = x1;
+                    startY = y1;
+                    endX = x2;
+                    endY = y2;
+                } else {
+                    startX = x2;
+                    startY = y2;
+                    endX = x1;
+                    endY = y1;
+                }
+                
+                dataPacket.setAttribute("cx", startX);
+                dataPacket.setAttribute("cy", startY);
+                
+                // Animate
+                const duration = 1000;
+                const startTime = Date.now();
+                
+                function step() {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    
+                    const currentX = startX + (endX - startX) * progress;
+                    const currentY = startY + (endY - startY) * progress;
+                    
+                    dataPacket.setAttribute("cx", currentX);
+                    dataPacket.setAttribute("cy", currentY);
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(step);
+                    } else {
+                        svg.removeChild(dataPacket);
+                    }
+                }
+                
+                requestAnimationFrame(step);
+            };
+            
+            // Start animation at random intervals
+            setInterval(animateDataTransfer, Math.random() * 3000 + 2000);
+        });
+    });
+</script>
+{% endblock %}

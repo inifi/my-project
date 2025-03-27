@@ -1,0 +1,64 @@
+{% extends "layout.html" %}
+
+{% block title %}| Authentication{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center my-5">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Owner Authentication</h4>
+                </div>
+                <div class="card-body">
+                    <p class="card-text text-center mb-4">
+                        This AI system is designed to respond exclusively to its owner.
+                        Please authenticate to access the system.
+                    </p>
+                    
+                    <form method="post" action="{{ url_for('auth') }}">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                <input type="text" class="form-control" id="username" name="username" placeholder="Owner username" required>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label for="password" class="form-label">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-key"></i></span>
+                                <input type="password" class="form-control" id="password" name="password" placeholder="Owner password" required>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Authenticate</button>
+                        </div>
+                    </form>
+                    
+                    {% if not user_count %}
+                    <div class="alert alert-info mt-4" role="alert">
+                        <h5 class="alert-heading">First-time Setup</h5>
+                        <p>
+                            It appears this is your first time accessing the system. When you authenticate, 
+                            your credentials will be registered as the owner of this AI system.
+                        </p>
+                        <hr>
+                        <p class="mb-0">
+                            Choose your credentials carefully as they will be required for all future access.
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <a href="{{ url_for('index') }}" class="btn btn-link">
+                    <i class="bi bi-arrow-left"></i> Back to Home
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

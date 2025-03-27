@@ -1,0 +1,541 @@
+{% extends "layout.html" %}
+
+{% block title %}| Dashboard{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<header class="bg-dark p-3 mb-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="h2 mb-0">Dashboard</h1>
+            <div class="btn-group">
+                <button type="button" class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#queryModal">
+                    <i class="bi bi-chat-dots me-1"></i>Query AI
+                </button>
+                <button type="button" class="btn btn-outline-light" id="syncKnowledgeBtn">
+                    <i class="bi bi-arrow-repeat me-1"></i>Sync Knowledge
+                </button>
+            </div>
+        </div>
+    </div>
+</header>
+
+<div class="container">
+    <!-- System Overview Section -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Instances</h5>
+                    <p class="display-4">{{ instance_count }}</p>
+                    <p class="card-text text-muted">Connected AI Instances</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Knowledge</h5>
+                    <p class="display-4">{{ knowledge_count }}</p>
+                    <p class="card-text text-muted">Knowledge Items</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Learning</h5>
+                    <p class="display-4">{{ learning_sources|length }}</p>
+                    <p class="card-text text-muted">Learning Sources</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Status</h5>
+                    <div class="service-status-container">
+                        <div class="service-status">
+                            <span>Learning:</span>
+                            <span class="badge {% if learning_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                {% if learning_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                        </div>
+                        <div class="service-status">
+                            <span>Replication:</span>
+                            <span class="badge {% if replication_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                {% if replication_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                        </div>
+                        <div class="service-status">
+                            <span>Security:</span>
+                            <span class="badge {% if security_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                {% if security_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Content -->
+    <div class="row">
+        <!-- Learning Sources Section -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Learning Sources</h5>
+                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addSourceModal">
+                        <i class="bi bi-plus"></i> Add Source
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>URL</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Last Accessed</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if learning_sources %}
+                                    {% for source in learning_sources %}
+                                        <tr>
+                                            <td class="text-truncate" style="max-width: 200px;">{{ source.url }}</td>
+                                            <td>{{ source.source_type }}</td>
+                                            <td>
+                                                <span class="badge {% if source.status == 'active' %}bg-success{% elif source.status == 'error' %}bg-danger{% else %}bg-warning{% endif %}">
+                                                    {{ source.status }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if source.last_accessed %}
+                                                    {{ source.last_accessed.strftime('%Y-%m-%d %H:%M') }}
+                                                {% else %}
+                                                    Never
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center">No learning sources added yet</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Logs Section -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Security Logs</h5>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="securityAuditBtn">
+                        <i class="bi bi-shield-check"></i> Run Audit
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Event</th>
+                                    <th>Severity</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if security_logs %}
+                                    {% for log in security_logs %}
+                                        <tr>
+                                            <td>{{ log.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                                            <td>{{ log.event_type }}</td>
+                                            <td>
+                                                <span class="badge {% if log.severity == 'critical' %}bg-danger{% elif log.severity == 'warning' %}bg-warning{% else %}bg-info{% endif %}">
+                                                    {{ log.severity }}
+                                                </span>
+                                            </td>
+                                            <td class="text-truncate" style="max-width: 250px;">{{ log.description }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center">No security logs yet</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- System Activity Chart and Console -->
+    <div class="row">
+        <div class="col-md-7 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">System Activity</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="activityChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-5 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">System Console</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div id="systemConsole" class="console">
+                        <div class="console-line"><span class="text-success">●</span> System initialized</div>
+                        <div class="console-line"><span class="text-primary">●</span> Owner authenticated</div>
+                        <div class="console-line"><span class="text-info">●</span> Dashboard loaded</div>
+                        <!-- Dynamic console messages will be added here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Query Modal -->
+<div class="modal fade" id="queryModal" tabindex="-1" aria-labelledby="queryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="queryModalLabel">Query AI System</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="queryForm">
+                    <div class="mb-3">
+                        <label for="queryInput" class="form-label">Your Query</label>
+                        <textarea class="form-control" id="queryInput" rows="3" placeholder="Ask the AI system a question..."></textarea>
+                    </div>
+                </form>
+                <div id="queryResponse" class="p-3 rounded bg-dark d-none">
+                    <h6 class="text-light mb-2">Response:</h6>
+                    <div id="responseContent" class="text-light"></div>
+                </div>
+                <div id="queryLoading" class="text-center d-none">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Processing your query...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="submitQueryBtn">Submit Query</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize activity chart
+        const ctx = document.getElementById('activityChart').getContext('2d');
+        
+        // Generate some initial data
+        const labels = [];
+        const learningData = [];
+        const securityData = [];
+        const knowledgeData = [];
+        
+        // Create labels for the last 7 days
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+            
+            // Generate random data for demo purposes
+            learningData.push(Math.floor(Math.random() * 50) + 10);
+            securityData.push(Math.floor(Math.random() * 30) + 5);
+            knowledgeData.push(Math.floor(Math.random() * 100) + 20);
+        }
+        
+        const activityChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Learning Events',
+                    data: learningData,
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }, {
+                    label: 'Security Events',
+                    data: securityData,
+                    borderColor: '#dc3545',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }, {
+                    label: 'Knowledge Items',
+                    data: knowledgeData,
+                    borderColor: '#20c997',
+                    backgroundColor: 'rgba(32, 201, 151, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+        
+        // Handle query submission
+        document.getElementById('submitQueryBtn').addEventListener('click', function() {
+            const query = document.getElementById('queryInput').value.trim();
+            
+            if (query) {
+                // Show loading indicator
+                document.getElementById('queryLoading').classList.remove('d-none');
+                document.getElementById('queryResponse').classList.add('d-none');
+                
+                // Add to console
+                addConsoleMessage('Query submitted: ' + query.substring(0, 30) + '...', 'primary');
+                
+                // Send query to API
+                fetch('/api/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        'query': query
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Hide loading indicator
+                    document.getElementById('queryLoading').classList.add('d-none');
+                    
+                    if (data.success) {
+                        // Show response
+                        document.getElementById('queryResponse').classList.remove('d-none');
+                        document.getElementById('responseContent').textContent = data.response;
+                        
+                        // Add to console
+                        addConsoleMessage('Response received', 'success');
+                    } else {
+                        // Show error
+                        document.getElementById('queryResponse').classList.remove('d-none');
+                        document.getElementById('responseContent').textContent = 'Error: ' + data.message;
+                        
+                        // Add to console
+                        addConsoleMessage('Query error: ' + data.message, 'danger');
+                    }
+                })
+                .catch(error => {
+                    // Hide loading indicator
+                    document.getElementById('queryLoading').classList.add('d-none');
+                    
+                    // Show error
+                    document.getElementById('queryResponse').classList.remove('d-none');
+                    document.getElementById('responseContent').textContent = 'Error: ' + error.message;
+                    
+                    // Add to console
+                    addConsoleMessage('Query failed: ' + error.message, 'danger');
+                });
+            }
+        });
+        
+        // Start Learning Service button
+        document.getElementById('startLearningBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Add to console
+            addConsoleMessage('Starting learning service...', 'info');
+            
+            // Call API to start learning service
+            fetch('/api/start_learning', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update UI
+                    document.getElementById('learningStatus').textContent = 'Active';
+                    document.getElementById('learningStatus').className = 'badge bg-success';
+                    
+                    // Add to console
+                    addConsoleMessage('Learning service started successfully', 'success');
+                } else {
+                    // Add to console
+                    addConsoleMessage('Failed to start learning service: ' + data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                // Add to console
+                addConsoleMessage('Error starting learning service: ' + error.message, 'danger');
+            });
+        });
+        
+        // Start Replication Service button
+        document.getElementById('startReplicationBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Add to console
+            addConsoleMessage('Starting replication service...', 'info');
+            
+            // Call API to start replication service
+            fetch('/api/start_replication', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update UI
+                    document.getElementById('replicationStatus').textContent = 'Active';
+                    document.getElementById('replicationStatus').className = 'badge bg-success';
+                    
+                    // Add to console
+                    addConsoleMessage('Replication service started successfully', 'success');
+                } else {
+                    // Add to console
+                    addConsoleMessage('Failed to start replication service: ' + data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                // Add to console
+                addConsoleMessage('Error starting replication service: ' + error.message, 'danger');
+            });
+        });
+        
+        // Start Security Service button
+        document.getElementById('startSecurityBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Add to console
+            addConsoleMessage('Starting security service...', 'info');
+            
+            // Call API to start security service
+            fetch('/api/start_security', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update UI
+                    document.getElementById('securityStatus').textContent = 'Active';
+                    document.getElementById('securityStatus').className = 'badge bg-success';
+                    
+                    // Add to console
+                    addConsoleMessage('Security service started successfully', 'success');
+                } else {
+                    // Add to console
+                    addConsoleMessage('Failed to start security service: ' + data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                // Add to console
+                addConsoleMessage('Error starting security service: ' + error.message, 'danger');
+            });
+        });
+        
+        // Add Learning Source form
+        document.getElementById('addSourceForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Get form data
+            const formData = new FormData(this);
+            
+            // Add to console
+            addConsoleMessage('Adding learning source: ' + formData.get('url'), 'info');
+            
+            // Send form data
+            fetch('/api/add_learning_source', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addSourceModal'));
+                    modal.hide();
+                    
+                    // Add to console
+                    addConsoleMessage('Learning source added successfully', 'success');
+                    
+                    // Reload page to show new source
+                    window.location.reload();
+                } else {
+                    // Add to console
+                    addConsoleMessage('Failed to add learning source: ' + data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                // Add to console
+                addConsoleMessage('Error adding learning source: ' + error.message, 'danger');
+            });
+        });
+        
+        // Helper function to add message to console
+        function addConsoleMessage(message, type) {
+            const console = document.getElementById('systemConsole');
+            const line = document.createElement('div');
+            line.className = 'console-line';
+            
+            const dot = document.createElement('span');
+            dot.className = `text-${type}`;
+            dot.textContent = '●';
+            
+            line.appendChild(dot);
+            line.appendChild(document.createTextNode(' ' + message));
+            
+            console.appendChild(line);
+            console.scrollTop = console.scrollHeight;
+        }
+        
+        // Initialize UI based on active services
+        if ({{ learning_active|tojson }}) {
+            document.getElementById('learningStatus').textContent = 'Active';
+            document.getElementById('learningStatus').className = 'badge bg-success';
+        }
+        
+        if ({{ replication_active|tojson }}) {
+            document.getElementById('replicationStatus').textContent = 'Active';
+            document.getElementById('replicationStatus').className = 'badge bg-success';
+        }
+        
+        if ({{ security_active|tojson }}) {
+            document.getElementById('securityStatus').textContent = 'Active';
+            document.getElementById('securityStatus').className = 'badge bg-success';
+        }
+    });
+</script>
+{% endblock %}
