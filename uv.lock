@@ -641,6 +641,12 @@ wheels = [
 ]
 
 [[package]]
+name = "netifaces"
+version = "0.11.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a6/91/86a6eac449ddfae239e93ffc1918cf33fd9bab35c04d1e963b311e347a73/netifaces-0.11.0.tar.gz", hash = "sha256:043a79146eb2907edf439899f262b3dfe41717d34124298ed281139a8b93ca32", size = 30106 }
+
+[[package]]
 name = "nltk"
 version = "3.9.1"
 source = { registry = "https://pypi.org/simple" }
@@ -915,7 +921,9 @@ dependencies = [
     { name = "flask-wtf" },
     { name = "gevent" },
     { name = "gunicorn" },
+    { name = "netifaces" },
     { name = "nltk" },
+    { name = "numpy" },
     { name = "psutil" },
     { name = "psycopg2-binary" },
     { name = "pyjwt" },
@@ -940,7 +948,9 @@ requires-dist = [
     { name = "flask-wtf", specifier = ">=1.2.2" },
     { name = "gevent", specifier = ">=24.11.1" },
     { name = "gunicorn", specifier = ">=23.0.0" },
+    { name = "netifaces", specifier = ">=0.11.0" },
     { name = "nltk", specifier = ">=3.9.1" },
+    { name = "numpy", specifier = ">=2.2.4" },
     { name = "psutil", specifier = ">=7.0.0" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "pyjwt", specifier = ">=2.10.1" },

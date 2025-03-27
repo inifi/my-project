@@ -61,7 +61,7 @@ def start_services():
 if __name__ == "__main__":
     # Log startup information
     logger.info(f"Starting AI system with instance ID: {config.INSTANCE_ID}")
-    logger.info(f"Host: {config.FLASK_HOST}, Port: {config.FLASK_PORT}")
+    logger.info(f"Host: {config.WEB_HOST}, Port: {config.WEB_PORT}")
     
     # Initialize enhanced security features
     try:
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     # Start the Flask application (standard mode for Replit compatibility)
     # In production with Replit, gunicorn will handle this
     app.run(
-        host=config.FLASK_HOST, 
-        port=config.FLASK_PORT, 
+        host=config.WEB_HOST, 
+        port=config.WEB_PORT, 
         debug=config.DEBUG
     )

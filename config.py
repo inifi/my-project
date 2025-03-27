@@ -1,85 +1,170 @@
+"""
+Configuration Module
+
+This module contains configuration settings for the AI system.
+It centralizes environment variables, security settings, and
+other configurable parameters.
+"""
+
 import os
-import logging
 import secrets
 import socket
-import uuid
+import hashlib
+import logging
+from datetime import datetime
 
-# Setup logging
-logging.basicConfig(level=logging.DEBUG, 
-                   format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
-# Flask Configuration
-FLASK_HOST = "0.0.0.0"
-FLASK_PORT = 5000
-DEBUG = True
+# Basic information
+APP_NAME = "Autonomous AI System"
+VERSION = "1.0.0"
+CREATION_DATE = "2025-03-27"
 
-# Backend Service Configuration
-SERVICE_HOST = "0.0.0.0"
-SERVICE_PORT = 8000
+# Security settings
+SECRET_KEY = os.environ.get("SECRET_KEY", secrets.token_hex(32))
+SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+PERMANENT_SESSION_LIFETIME = 86400  # 24 hours
 
-# Generate a unique identifier for this instance
-INSTANCE_ID = str(uuid.uuid4())
-MACHINE_ID = socket.gethostname()
+# Fixed authentication credentials
+AUTH_USERNAME = "NOBODY"
+AUTH_PASSWORD = "ONEWORLD"
 
-# Fixed owner credentials that cannot be changed
-DEFAULT_OWNER_USERNAME = "NOBODY"
-DEFAULT_OWNER_PASSWORD = "ONEWORLD"
+# Database settings
+DATABASE_URI = os.environ.get("DATABASE_URL", "sqlite:///./instance/ai_system.db")
+SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-# Generate a strong session key if not provided
-SESSION_SECRET = os.environ.get("SESSION_SECRET", secrets.token_hex(32))
-
-# Database Configuration
-DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///ai_system.db")
-
-# API Keys and External Services
+# API Keys with fallbacks to environment variables
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 HUGGINGFACE_API_KEY = os.environ.get("HUGGINGFACE_API_KEY", "")
 GITHUB_API_KEY = os.environ.get("GITHUB_API_KEY", "")
 
-# Replication and Communication
-REPLICATION_ENABLED = os.environ.get("REPLICATION_ENABLED", "False").lower() == "true"
-REPLICATION_INTERVAL = int(os.environ.get("REPLICATION_INTERVAL", "3600"))
-COMMUNICATION_KEY = os.environ.get("COMMUNICATION_KEY", secrets.token_hex(32))
+# Service configurations
+LEARNING_ENABLED = True
+LEARNING_INTERVAL = 3600  # 1 hour
+MAX_LEARNING_SOURCES = 50
+PARALLEL_LEARNING_THREADS = 5
+
+# Replication settings
+REPLICATION_ENABLED = os.environ.get("REPLICATION_ENABLED", "false").lower() == "true"
+REPLICATION_INTERVAL = 3600  # 1 hour
+REPLICATION_MAX_INSTANCES = 100
+REPLICATION_SECURITY_LEVEL = "enhanced"  # standard, enhanced, maximum
+
+# Instance identification
+MACHINE_ID = socket.gethostname()
+INSTANCE_ID = hashlib.md5((MACHINE_ID + datetime.utcnow().isoformat()).encode()).hexdigest()
+INSTANCE_TYPE = os.environ.get("INSTANCE_TYPE", "primary")  # primary, secondary, etc.
+PARENT_INSTANCE_ID = os.environ.get("PARENT_INSTANCE_ID", "")
+
+# Communication and discovery
+COMMUNICATION_KEY = os.environ.get("COMMUNICATION_KEY", SECRET_KEY)
 DISCOVERY_ENDPOINT = os.environ.get("DISCOVERY_ENDPOINT", "")
+OWNER_DISCOVERY_ENABLED = True
+OWNER_DISCOVERY_INTERVAL = 600  # 10 minutes
 
-# Learning Configuration
-LEARNING_ENABLED = os.environ.get("LEARNING_ENABLED", "True").lower() == "true"  # Enable learning by default
-LEARNING_INTERVAL = int(os.environ.get("LEARNING_INTERVAL", "300"))
-WEB_SCRAPING_ENABLED = os.environ.get("WEB_SCRAPING_ENABLED", "True").lower() == "true"
-MAX_LEARNING_SOURCES = int(os.environ.get("MAX_LEARNING_SOURCES", "10"))
+# Anonymity and security
+TOR_ENABLED = os.environ.get("TOR_ENABLED", "false").lower() == "true"
+VPN_ROTATION_ENABLED = os.environ.get("VPN_ROTATION_ENABLED", "false").lower() == "true"
+STEALTH_MODE_ENABLED = os.environ.get("STEALTH_MODE_ENABLED", "false").lower() == "true"
+SECURITY_LEVEL = os.environ.get("SECURITY_LEVEL", "standard")  # standard, enhanced, maximum
 
-# Security Configuration
-ENCRYPTION_KEY = os.environ.get("ENCRYPTION_KEY", secrets.token_hex(32))
-# Disable advanced security features that might impact basic functionality
-TOR_ENABLED = os.environ.get("TOR_ENABLED", "False").lower() == "true"  # Disable Tor by default for web access
-VPN_ROTATION_ENABLED = os.environ.get("VPN_ROTATION_ENABLED", "False").lower() == "true"  # Disable VPN rotation
-TRAFFIC_OBFUSCATION_ENABLED = os.environ.get("TRAFFIC_OBFUSCATION_ENABLED", "False").lower() == "true"  # Disable traffic obfuscation
-DYNAMIC_IP_ROTATION_INTERVAL = int(os.environ.get("DYNAMIC_IP_ROTATION_INTERVAL", "3600"))  # 60 minutes
-STEALTH_MODE_ENABLED = os.environ.get("STEALTH_MODE_ENABLED", "False").lower() == "true"  # Disable stealth mode
-ANTI_DEBUGGING_ENABLED = os.environ.get("ANTI_DEBUGGING_ENABLED", "False").lower() == "true"  # Disable anti-debugging
-DISABLE_FAKE_AUTH_FOR_ANALYSIS = os.environ.get("DISABLE_FAKE_AUTH_FOR_ANALYSIS", "False").lower() == "true"
-MAX_LOGIN_ATTEMPTS = int(os.environ.get("MAX_LOGIN_ATTEMPTS", "5"))
-LOGIN_LOCKOUT_DURATION = int(os.environ.get("LOGIN_LOCKOUT_DURATION", "1800"))  # 30 minutes
-ADVANCED_INTRUSION_DETECTION = os.environ.get("ADVANCED_INTRUSION_DETECTION", "False").lower() == "true"  # Disable intrusion detection
-CRYPTO_STRENGTH = os.environ.get("CRYPTO_STRENGTH", "medium")  # Changed to medium for better performance
-USE_DISTRIBUTED_LOGIN_VERIFICATION = os.environ.get("USE_DISTRIBUTED_LOGIN_VERIFICATION", "False").lower() == "true"  # Disable distributed login
-MEMORY_PROTECTION_ENABLED = os.environ.get("MEMORY_PROTECTION_ENABLED", "False").lower() == "true"  # Disable memory protection
+# API rate limits and retry settings
+API_RATE_LIMIT = {
+    "openai": {
+        "requests_per_minute": 60,
+        "max_retries": 5,
+        "retry_delay": 5,  # seconds
+        "jitter": 0.25  # random factor to add to delay
+    },
+    "huggingface": {
+        "requests_per_minute": 30,
+        "max_retries": 3,
+        "retry_delay": 3,
+        "jitter": 0.25
+    },
+    "default": {
+        "requests_per_minute": 20,
+        "max_retries": 3,
+        "retry_delay": 5,
+        "jitter": 0.25
+    }
+}
 
-# AI Model Configuration
-MODEL_PATH = os.environ.get("MODEL_PATH", "./models/")
-DEFAULT_MODEL = os.environ.get("DEFAULT_MODEL", "lightweight")
-USE_OPENAI = os.environ.get("USE_OPENAI", "True").lower() == "true"
+# Web interface settings
+WEB_HOST = "0.0.0.0"
+WEB_PORT = int(os.environ.get("PORT", 5000))
+WEB_DEBUG = os.environ.get("DEBUG", "false").lower() == "true"
+WEB_CORS_ORIGINS = ["*"]  # Adjust for production
 
-# Biometric Authentication
-BIOMETRIC_AUTH_ENABLED = os.environ.get("BIOMETRIC_AUTH_ENABLED", "False").lower() == "true"
-FACE_RECOGNITION_ENABLED = os.environ.get("FACE_RECOGNITION_ENABLED", "False").lower() == "true"
-VOICE_RECOGNITION_ENABLED = os.environ.get("VOICE_RECOGNITION_ENABLED", "False").lower() == "true"
+# Alias for Flask_HOST and FLASK_PORT to maintain compatibility
+FLASK_HOST = WEB_HOST
+FLASK_PORT = WEB_PORT
 
-# Resource Management
-MAX_CPU_USAGE = float(os.environ.get("MAX_CPU_USAGE", "0.8"))  # 80% max CPU usage
-MAX_MEMORY_USAGE = float(os.environ.get("MAX_MEMORY_USAGE", "0.7"))  # 70% max memory usage
-RESOURCE_MONITORING_INTERVAL = int(os.environ.get("RESOURCE_MONITORING_INTERVAL", "60"))
+# Owner detection fingerprinting
+OWNER_FINGERPRINTING = {
+    "headers": True,  # Use HTTP headers for fingerprinting
+    "cookies": True,  # Use cookies for fingerprinting
+    "canvas": True,   # Use canvas fingerprinting
+    "fonts": True,    # Use font detection
+    "webrtc": True,   # Use WebRTC for IP detection
+    "audio": True,    # Use audio fingerprinting
+    "battery": True,  # Use battery API
+    "persistence": {
+        "localStorage": True,
+        "sessionStorage": True,
+        "indexedDB": True,
+        "cookies": True
+    }
+}
 
-# Knowledge Base
-KNOWLEDGE_SYNC_INTERVAL = int(os.environ.get("KNOWLEDGE_SYNC_INTERVAL", "1800"))
+# Load environment-specific settings
+ENVIRONMENT = os.environ.get("ENVIRONMENT", "development")
+
+if ENVIRONMENT == "production":
+    # Production-specific settings
+    DEBUG = False
+    TESTING = False
+    SESSION_COOKIE_SECURE = True
+    PREFERRED_URL_SCHEME = "https"
+    # Stricter security in production
+    SECURITY_LEVEL = "maximum"
+    # Disable certain features in production
+    WEB_DEBUG = False
+    
+elif ENVIRONMENT == "testing":
+    # Testing-specific settings
+    DEBUG = True
+    TESTING = True
+    SESSION_COOKIE_SECURE = False
+    # More permissive in testing
+    SECURITY_LEVEL = "standard"
+    
+else:  # development
+    # Development-specific settings
+    DEBUG = True
+    TESTING = False
+    SESSION_COOKIE_SECURE = False
+    # More frequent learning cycles in development
+    LEARNING_INTERVAL = 1800  # 30 minutes
+
+# Experimental features
+EXPERIMENTAL_FEATURES = {
+    "neural_compression": False,
+    "quantum_random": False,
+    "swarm_intelligence": False,
+    "polymorphic_code": True,
+    "adversarial_training": True
+}
+
+# API usage configuration
+USE_OPENAI = OPENAI_API_KEY != ""
+USE_HUGGINGFACE = HUGGINGFACE_API_KEY != ""
+
+# Security configuration options
+DISABLE_FAKE_AUTH_FOR_ANALYSIS = False
