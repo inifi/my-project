@@ -26,10 +26,10 @@ def update_knowledge_base(app, socketio=None):
     Update the AI's knowledge base with new information from learning sources
     
     This function:
-    1. Retrieves active learning sources from the database
-    2. Processes each source to extract valuable information in parallel threads
-    3. Filters out duplicate or low-quality information
-    4. Stores new knowledge in the database
+    1. Retrieves active learning sources from the database, with prioritization support
+    2. Processes each source to extract valuable information using a hyper-efficient parallel processing approach
+    3. Implements advanced deduplication and relevance filtering
+    4. Stores new knowledge in the database with vector embeddings for search
     5. Reports progress in real-time via socketio if available
     
     Args:
@@ -42,20 +42,43 @@ def update_knowledge_base(app, socketio=None):
         import threading
         from concurrent.futures import ThreadPoolExecutor, as_completed
         
-        logger.info("Starting enhanced knowledge base update with parallel processing")
+        logger.info("Starting turbo-charged knowledge base update with advanced parallel processing")
         
         # Emit update status if socketio is available
         if socketio:
-            socketio.emit('system_message', {'message': 'Starting super fast knowledge base update with parallel processing...'})
+            socketio.emit('system_message', {'message': 'Starting super fast knowledge acquisition with advanced parallel processing...'})
         
-        # Get learning sources that need to be updated - increased limit to process more sources
+        # Get learning sources that need to be updated with priority processing support
         now = datetime.utcnow()
-        sources = LearningSource.query.filter(
-            (LearningSource.last_accessed == None) |  # Never accessed
-            (LearningSource.last_accessed < now - timedelta(hours=1))  # Changed from days to hours for faster learning
-        ).filter_by(status='active').limit(25).all()  # Increased from 10 to 25
         
-        logger.info(f"Found {len(sources)} learning sources to update")
+        # First query to get high priority sources
+        high_priority_sources = LearningSource.query.filter(
+            (LearningSource.last_accessed == None) |  # Never accessed
+            (LearningSource.last_accessed < now - timedelta(minutes=30))  # Higher priority sources refresh faster
+        ).filter_by(status='active').filter(
+            (LearningSource.priority == 'highest') | (LearningSource.priority == 'high')
+        ).limit(40).all()  # Process more high priority sources
+        
+        # Second query to get regular sources
+        normal_sources = LearningSource.query.filter(
+            (LearningSource.last_accessed == None) |  # Never accessed
+            (LearningSource.last_accessed < now - timedelta(hours=1))  # Regular sources on hourly schedule
+        ).filter_by(status='active').filter(
+            (LearningSource.priority != 'highest') & (LearningSource.priority != 'high')
+        ).limit(30).all()  # Still process a good number of regular sources
+        
+        # Combine sources with high priority first
+        sources = high_priority_sources + normal_sources
+        
+        # If we don't have any sources yet (first run), we'll pick them up after they're added
+        if len(sources) == 0:
+            logger.info("No learning sources found to update. Will try again later.")
+            # This isn't an error, it's just that no sources need updating
+            # New installations will have sources added but they may not be ready for the first update cycle
+            # Ensure we return with at least one worker for ThreadPoolExecutor
+            return
+        
+        logger.info(f"Found {len(sources)} learning sources to update (High priority: {len(high_priority_sources)}, Regular: {len(normal_sources)})")
         
         # Define a worker function to process a single source
         def process_source(source):
@@ -63,21 +86,33 @@ def update_knowledge_base(app, socketio=None):
                 'url': source.url,
                 'success': False,
                 'error': None,
-                'knowledge_items': 0
+                'knowledge_items': 0,
+                'priority': source.priority if hasattr(source, 'priority') else 'normal'
             }
             
             try:
-                logger.info(f"Processing learning source: {source.url}")
+                logger.info(f"Processing learning source: {source.url} (priority: {source_result['priority']})")
                 
                 # Emit update if socketio is available
                 if socketio:
                     socketio.emit('system_message', {'message': f'Learning from {source.url}...'})
                 
-                # Reduced delay to speed up learning
-                time.sleep(random.uniform(0.2, 0.5))
+                # Reduced delay to speed up learning - even less for high priority sources
+                if source_result['priority'] in ['highest', 'high']:
+                    time.sleep(random.uniform(0.05, 0.2))  # Minimal delay for high priority
+                else:
+                    time.sleep(random.uniform(0.1, 0.3))  # Low delay for regular sources
                 
-                # Scrape website content using fast mode for better performance
-                result = scrape_website(source.url, obfuscate=True, timeout=15, fast_mode=True)
+                # Special handling for different source types
+                if source.source_type == 'api':
+                    # Handle API-based sources differently (like Reddit, Twitter, etc.)
+                    result = process_api_source(source.url, timeout=15)
+                elif source.source_type == 'research':
+                    # Special handling for research repositories to extract paper information
+                    result = process_research_source(source.url, timeout=20)
+                else:
+                    # Standard website scraping with advanced performance options
+                    result = scrape_website(source.url, obfuscate=True, timeout=15, fast_mode=True)
                 
                 if result['success'] and result['content']:
                     with app.app_context():
@@ -90,8 +125,8 @@ def update_knowledge_base(app, socketio=None):
                     knowledge_count = process_and_store_knowledge(app, result, source)
                     source_result['knowledge_items'] = knowledge_count
                     
-                    # Extract and queue additional links if needed
-                    if source.source_type == 'website' and source.access_count < 5:
+                    # Extract and queue additional links if needed (with priority inheritance)
+                    if source.source_type in ['website', 'research'] and source.access_count < 5:
                         additional_links = process_additional_links(app, result, source)
                         source_result['additional_links'] = additional_links
                     
@@ -100,7 +135,7 @@ def update_knowledge_base(app, socketio=None):
                     # Emit success message
                     if socketio:
                         socketio.emit('system_message', {
-                            'message': f'Successfully learned from {source.url}'
+                            'message': f'Successfully learned from {source.url} ({knowledge_count} new items)'
                         })
                 else:
                     with app.app_context():
@@ -157,14 +192,19 @@ def update_knowledge_base(app, socketio=None):
         # Process sources in parallel using a thread pool
         results = []
         
-        # Determine max workers based on sources count but not more than CPU cores * 2
+        # Determine max workers based on sources count and scale with available CPU
         import multiprocessing
-        max_workers = min(len(sources), multiprocessing.cpu_count() * 2)
+        # Ensure we have at least 1 worker even if sources is empty
+        max_workers = max(1, min(len(sources), multiprocessing.cpu_count() * 3))  # Scale to 3x CPU for more parallelism
         
         # Use ThreadPoolExecutor to process sources in parallel
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             # Submit all source processing tasks
             future_to_source = {executor.submit(process_source, source): source for source in sources}
+            
+            # Track progress for real-time updates
+            total_sources = len(future_to_source)
+            completed = 0
             
             # Collect results as they complete
             for future in as_completed(future_to_source):
@@ -172,21 +212,212 @@ def update_knowledge_base(app, socketio=None):
                 try:
                     result = future.result()
                     results.append(result)
-                    logger.info(f"Completed processing {source.url}, success: {result['success']}")
+                    completed += 1
+                    
+                    # Log completion status
+                    priority_tag = f"[{result.get('priority', 'normal').upper()}]" if 'priority' in result else ""
+                    success_status = "✓" if result['success'] else "✗"
+                    
+                    logger.info(f"Completed processing {source.url} {priority_tag} {success_status} ({completed}/{total_sources})")
+                    
+                    # Emit progress updates at intervals
+                    if socketio and completed % 5 == 0:
+                        progress_pct = int((completed / total_sources) * 100)
+                        socketio.emit('learning_progress', {
+                            'completed': completed,
+                            'total': total_sources,
+                            'percent': progress_pct
+                        })
                 except Exception as e:
                     logger.error(f"Exception processing {source.url}: {str(e)}")
+                    completed += 1
         
         # Summarize results
         successful = [r for r in results if r['success']]
         failed = [r for r in results if not r['success']]
+        total_knowledge_items = sum(r.get('knowledge_items', 0) for r in successful)
         
-        logger.info(f"Knowledge base update completed: {len(successful)} sources processed successfully, {len(failed)} failed")
+        logger.info(f"Knowledge base update completed: {len(successful)} sources processed successfully, {len(failed)} failed, {total_knowledge_items} new knowledge items")
         
-        # Emit completion message with statistics
+        # Emit completion message with detailed statistics
         if socketio:
             socketio.emit('system_message', {
-                'message': f'Knowledge base update completed: {len(successful)} sources processed successfully, {len(failed)} failed'
+                'message': f'Knowledge acquisition completed: {len(successful)} sources processed, {total_knowledge_items} new items learned'
             })
+
+# New specialized functions for different source types
+def process_api_source(url, timeout=15):
+    """
+    Process an API-based learning source (like Reddit, Twitter, etc.)
+    
+    Args:
+        url: API URL to query
+        timeout: Request timeout in seconds
+        
+    Returns:
+        dict: Dictionary containing the extracted content and metadata
+    """
+    try:
+        logger.info(f"Accessing API source: {url}")
+        result = {
+            'url': url,
+            'timestamp': datetime.utcnow().isoformat(),
+            'success': False,
+            'content': '',
+            'metadata': {},
+            'error': None,
+            'source_type': 'api'
+        }
+        
+        # Set up headers for the API request
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (compatible; AI Learning System/1.0)',
+            'Accept': 'application/json'
+        }
+        
+        # Make the API request
+        response = requests.get(url, headers=headers, timeout=timeout)
+        response.raise_for_status()
+        
+        # Parse the JSON response
+        data = response.json()
+        
+        # Process based on known API formats
+        if '/r/' in url and '.json' in url:  # Reddit API
+            # Extract posts from Reddit API response
+            posts = []
+            if 'data' in data and 'children' in data['data']:
+                for post in data['data']['children']:
+                    if 'data' in post:
+                        post_data = post['data']
+                        title = post_data.get('title', '')
+                        selftext = post_data.get('selftext', '')
+                        url = post_data.get('url', '')
+                        author = post_data.get('author', '')
+                        score = post_data.get('score', 0)
+                        
+                        # Only include substantial posts
+                        if len(title) > 10 and (len(selftext) > 100 or score > 50):
+                            post_content = f"Title: {title}\n\nContent: {selftext}\n\nURL: {url}\nAuthor: {author}\nScore: {score}"
+                            posts.append(post_content)
+            
+            # Combine all post content
+            result['content'] = "\n\n---\n\n".join(posts)
+            result['success'] = len(posts) > 0
+            result['metadata']['post_count'] = len(posts)
+        
+        else:  # Generic API handling
+            # Convert JSON to readable text
+            content_parts = []
+            
+            def extract_text_from_json(json_obj, prefix=''):
+                if isinstance(json_obj, dict):
+                    for key, value in json_obj.items():
+                        if isinstance(value, (dict, list)):
+                            extract_text_from_json(value, prefix + key + '.')
+                        elif isinstance(value, str) and len(value) > 5:
+                            content_parts.append(f"{prefix}{key}: {value}")
+                elif isinstance(json_obj, list):
+                    for i, item in enumerate(json_obj):
+                        if isinstance(item, (dict, list)):
+                            extract_text_from_json(item, prefix + f"[{i}].")
+                        elif isinstance(item, str) and len(item) > 5:
+                            content_parts.append(f"{prefix}[{i}]: {item}")
+            
+            extract_text_from_json(data)
+            result['content'] = "\n".join(content_parts)
+            result['success'] = len(content_parts) > 0
+        
+        return result
+    
+    except Exception as e:
+        logger.error(f"Error processing API source {url}: {str(e)}")
+        return {
+            'url': url,
+            'timestamp': datetime.utcnow().isoformat(),
+            'success': False,
+            'content': '',
+            'metadata': {},
+            'error': str(e),
+            'source_type': 'api'
+        }
+
+def process_research_source(url, timeout=20):
+    """
+    Process a research source (like arXiv, conference proceedings)
+    
+    Args:
+        url: URL to the research repository or paper
+        timeout: Request timeout in seconds
+        
+    Returns:
+        dict: Dictionary containing the extracted content and metadata
+    """
+    try:
+        from bs4 import BeautifulSoup  # Import here for explicit dependency
+        
+        logger.info(f"Accessing research source: {url}")
+        result = {
+            'url': url,
+            'timestamp': datetime.utcnow().isoformat(),
+            'success': False,
+            'content': '',
+            'metadata': {},
+            'error': None,
+            'source_type': 'research'
+        }
+        
+        # First try with the scraper for general content
+        scraped = scrape_website(url, obfuscate=True, timeout=timeout, fast_mode=True)
+        
+        if scraped['success'] and scraped['content']:
+            result['content'] = scraped['content']
+            result['downloaded'] = scraped.get('downloaded', '')
+            result['success'] = True
+            
+            # For arXiv listings, try to extract paper information
+            if 'arxiv.org/list/' in url:
+                # If we have HTML content, parse it to extract paper details
+                if 'downloaded' in scraped:
+                    html_content = scraped['downloaded']
+                    soup = BeautifulSoup(html_content, 'html.parser')
+                    
+                    # Extract paper listings
+                    papers = []
+                    paper_items = soup.select('dl')
+                    
+                    for dl in paper_items:
+                        # Each paper usually has dt (with title/link) and dd (with authors, abstract)
+                        title_elem = dl.select_one('dt .list-title')
+                        abstract_elem = dl.select_one('dd .abstract-full')
+                        authors_elem = dl.select_one('dd .list-authors')
+                        
+                        if title_elem and abstract_elem:
+                            title = title_elem.get_text(strip=True)
+                            abstract = abstract_elem.get_text(strip=True).replace('Abstract: ', '')
+                            authors = authors_elem.get_text(strip=True).replace('Authors:', '') if authors_elem else ''
+                            
+                            paper_info = f"Title: {title}\n\nAuthors: {authors}\n\nAbstract: {abstract}"
+                            papers.append(paper_info)
+                    
+                    if papers:
+                        # Replace the content with structured paper information
+                        result['content'] = "\n\n---\n\n".join(papers)
+                        result['metadata']['paper_count'] = len(papers)
+        
+        return result
+    
+    except Exception as e:
+        logger.error(f"Error processing research source {url}: {str(e)}")
+        return {
+            'url': url,
+            'timestamp': datetime.utcnow().isoformat(),
+            'success': False,
+            'content': '',
+            'metadata': {},
+            'error': str(e),
+            'source_type': 'research'
+        }
 
 def process_and_store_knowledge(app, scraped_result, source):
     """

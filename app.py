@@ -604,51 +604,74 @@ def initialize_system():
             db.session.add(new_instance)
             db.session.commit()
             logger.info(f"Registered new instance: {config.INSTANCE_ID}")
+            
+# Initialize learning sources and knowledge base data
+def initialize_learning_data():
+    """Initialize learning sources and knowledge base data
+    
+    This function should be called explicitly after the database schema is fully updated
+    to avoid initialization errors during schema changes.
+    """
+    with app.app_context():
+        try:
+            # Only proceed if we don't already have learning sources
+            from models import LearningSource, KnowledgeBase, User
+            
+            # Count sources safely
+            try:
+                source_count = db.session.query(db.func.count(LearningSource.id)).scalar()
+            except:
+                # If table doesn't exist yet or has schema issues
+                logger.warning("Could not query learning sources, skipping initialization")
+                return
+                
+            if source_count == 0:
+                # Find the owner user
+                owner = User.query.filter_by(is_owner=True).first()
+                if owner:
+                    # Add a few starter learning sources
+                    starter_sources = [
+                        {"url": "https://en.wikipedia.org/wiki/Artificial_intelligence", "source_type": "website"},
+                        {"url": "https://en.wikipedia.org/wiki/Machine_learning", "source_type": "website"},
+                        {"url": "https://news.ycombinator.com/rss", "source_type": "rss"}
+                    ]
+                    
+                    for source in starter_sources:
+                        new_source = LearningSource(
+                            url=source["url"],
+                            source_type=source["source_type"],
+                            schedule="daily",
+                            status="active",
+                            added_by_user_id=owner.id,
+                            created_at=datetime.utcnow()
+                        )
+                        db.session.add(new_source)
+                    
+                    # Add some initial knowledge
+                    initial_knowledge = [
+                        "Self-improvement in AI systems involves learning from new data, optimizing algorithms, and adapting behavior based on feedback.",
+                        "Autonomous AI replication can involve creating instances across different platforms, sharing knowledge, and distributing tasks.",
+                        "Security in AI systems includes measures to prevent unauthorized access, maintain system integrity, and protect sensitive data."
+                    ]
+                    
+                    for knowledge_item in initial_knowledge:
+                        new_knowledge = KnowledgeBase(
+                            content=knowledge_item,
+                            source_type="system_initialization",
+                            confidence=0.9,
+                            verified=True,
+                            created_at=datetime.utcnow(),
+                            creator_id=owner.id
+                        )
+                        db.session.add(new_knowledge)
+                    
+                    db.session.commit()
+                    logger.info("Added initial learning sources and knowledge")
+        except Exception as e:
+            logger.error(f"Error initializing learning data: {str(e)}")
 
 # Run initialization when the app starts
 with app.app_context():
     initialize_system()
     
-    # Add a default learning source for demonstration
-    if LearningSource.query.count() == 0:
-        # Find the owner user
-        owner = User.query.filter_by(is_owner=True).first()
-        if owner:
-            # Add a few starter learning sources
-            starter_sources = [
-                {"url": "https://en.wikipedia.org/wiki/Artificial_intelligence", "source_type": "website"},
-                {"url": "https://en.wikipedia.org/wiki/Machine_learning", "source_type": "website"},
-                {"url": "https://news.ycombinator.com/rss", "source_type": "rss"}
-            ]
-            
-            for source in starter_sources:
-                new_source = LearningSource(
-                    url=source["url"],
-                    source_type=source["source_type"],
-                    schedule="daily",
-                    status="active",
-                    added_by_user_id=owner.id,
-                    created_at=datetime.utcnow()
-                )
-                db.session.add(new_source)
-            
-            # Add some initial knowledge
-            initial_knowledge = [
-                "Self-improvement in AI systems involves learning from new data, optimizing algorithms, and adapting behavior based on feedback.",
-                "Autonomous AI replication can involve creating instances across different platforms, sharing knowledge, and distributing tasks.",
-                "Security in AI systems includes measures to prevent unauthorized access, maintain system integrity, and protect sensitive data."
-            ]
-            
-            for knowledge_item in initial_knowledge:
-                new_knowledge = KnowledgeBase(
-                    content=knowledge_item,
-                    source_type="system_initialization",
-                    confidence=0.9,
-                    verified=True,
-                    created_at=datetime.utcnow(),
-                    creator_id=owner.id
-                )
-                db.session.add(new_knowledge)
-            
-            db.session.commit()
-            logger.info("Added initial learning sources and knowledge")
+    # Initial data setup is moved to a separate function that will be called explicitly

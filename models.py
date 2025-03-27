@@ -67,24 +67,26 @@ class KnowledgeBase(db.Model):
         return f"<KnowledgeBase {self.id}: {self.content[:30]}...>"
 
 class LearningSource(db.Model):
-    """Sources to learn from periodically"""
+    """Sources to learn from periodically with prioritization"""
     __tablename__ = 'learning_sources'
     
     id = Column(Integer, primary_key=True)
     url = Column(String(512), nullable=False)  # URL to scrape or API to call
-    source_type = Column(String(32), nullable=False)  # website, api, youtube, etc.
-    schedule = Column(String(32), default="daily")  # How often to check this source
+    source_type = Column(String(32), nullable=False)  # website, api, research, news, youtube, etc.
+    schedule = Column(String(32), default="daily")  # How often to check this source: hourly, daily, weekly
+    priority = Column(String(16), default="normal")  # Priority level: highest, high, normal, low
     last_accessed = Column(DateTime, nullable=True)  # When we last accessed this source
     access_count = Column(Integer, default=0)  # How many times we've accessed this source
     status = Column(String(32), default="active")  # active, paused, error, etc.
     created_at = Column(DateTime, default=datetime.utcnow)
     added_by_user_id = Column(Integer, ForeignKey('users.id'))
+    source_metadata = Column(JSON, nullable=True)  # Additional data about this source (renamed from metadata)
     
     # Relationships
     added_by = relationship("User", back_populates="learning_sources")
     
     def __repr__(self):
-        return f"<LearningSource {self.url}>"
+        return f"<LearningSource {self.url} ({self.priority})>"
 
 class SecurityLog(db.Model):
     """Security-related events and potential threats"""
