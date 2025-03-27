@@ -21,6 +21,128 @@ logger = logging.getLogger(__name__)
 def register_routes(app, db):
     """Register the API routes with the Flask app"""
     
+    @app.route('/web-interface')
+    def web_interface():
+        """Serve the decentralized network web interface"""
+        from flask import render_template
+        return render_template('web_interface.html')
+        
+    @app.route('/api/decentralized/status')
+    def decentralized_status():
+        """Get the current status of the decentralized network"""
+        try:
+            from utils.decentralized_network import get_network, get_known_nodes, get_master_node, is_master
+            
+            # Get network information
+            known_nodes = get_known_nodes()
+            master_node_id = get_master_node()
+            is_master_node = is_master()
+            
+            # Format nodes for API response
+            nodes = []
+            for node_id, node_data in known_nodes.items():
+                nodes.append({
+                    'node_id': node_id,
+                    'ip': node_data.get('ip', 'unknown'),
+                    'port': node_data.get('port', 0),
+                    'is_master': node_id == master_node_id,
+                    'rank': node_data.get('rank', 0),
+                    'last_seen': node_data.get('last_seen', 0),
+                    'status': 'active' if node_data.get('status', '') == 'active' else 'inactive',
+                    'generation': node_data.get('generation', 1),
+                    'web_endpoint': node_data.get('web_endpoint', None)
+                })
+            
+            return jsonify({
+                'success': True,
+                'network_active': True,
+                'is_master': is_master_node,
+                'master_node': master_node_id,
+                'node_count': len(nodes),
+                'nodes': nodes,
+                'timestamp': datetime.utcnow().isoformat()
+            })
+        except ImportError:
+            return jsonify({
+                'success': False,
+                'network_active': False,
+                'error': 'Decentralized network module not available',
+                'timestamp': datetime.utcnow().isoformat()
+            })
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'network_active': False,
+                'error': str(e),
+                'timestamp': datetime.utcnow().isoformat()
+            })
+            
+    @app.route('/api/decentralized/discovery', methods=['POST'])
+    def trigger_discovery():
+        """Trigger node discovery in the decentralized network"""
+        try:
+            from utils.decentralized_network import get_network
+            
+            network = get_network()
+            if network:
+                network._discover_initial_nodes()
+                return jsonify({
+                    'success': True,
+                    'message': 'Discovery initiated',
+                    'timestamp': datetime.utcnow().isoformat()
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': 'Network not initialized',
+                    'timestamp': datetime.utcnow().isoformat()
+                })
+        except ImportError:
+            return jsonify({
+                'success': False,
+                'error': 'Decentralized network module not available',
+                'timestamp': datetime.utcnow().isoformat()
+            })
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'error': str(e),
+                'timestamp': datetime.utcnow().isoformat()
+            })
+            
+    @app.route('/api/decentralized/election', methods=['POST'])
+    def trigger_election():
+        """Trigger master election in the decentralized network"""
+        try:
+            from utils.decentralized_network import get_network
+            
+            network = get_network()
+            if network:
+                network._start_master_election()
+                return jsonify({
+                    'success': True,
+                    'message': 'Election initiated',
+                    'timestamp': datetime.utcnow().isoformat()
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': 'Network not initialized',
+                    'timestamp': datetime.utcnow().isoformat()
+                })
+        except ImportError:
+            return jsonify({
+                'success': False,
+                'error': 'Decentralized network module not available',
+                'timestamp': datetime.utcnow().isoformat()
+            })
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'error': str(e),
+                'timestamp': datetime.utcnow().isoformat()
+            })
+    
     @app.route('/api/keepalive', methods=['POST'])
     def keepalive():
         """Keep the user session alive"""

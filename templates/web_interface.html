@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Decentralized AI Network | Control Panel</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding: 20px;
+            background-color: var(--bs-body-bg);
+            color: var(--bs-body-color);
+        }
+        .node-card {
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        .node-card .card-header {
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-active {
+            background-color: var(--bs-success);
+            box-shadow: 0 0 5px var(--bs-success);
+        }
+        .status-inactive {
+            background-color: var(--bs-danger);
+        }
+        .status-warning {
+            background-color: var(--bs-warning);
+        }
+        .status-master {
+            background-color: var(--bs-info);
+            box-shadow: 0 0 5px var(--bs-info);
+        }
+        .command-history {
+            height: 200px;
+            overflow-y: auto;
+            background-color: var(--bs-dark);
+            color: var(--bs-light);
+            padding: 10px;
+            font-family: monospace;
+            border-radius: 4px;
+        }
+        .terminal-line {
+            margin: 0;
+            line-height: 1.5;
+        }
+        .network-map {
+            height: 300px;
+            background-color: var(--bs-dark);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        .node-point {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: var(--bs-primary);
+            transform: translate(-50%, -50%);
+            transition: all 0.3s ease;
+        }
+        .node-point.master {
+            background-color: var(--bs-info);
+            box-shadow: 0 0 10px var(--bs-info);
+            width: 25px;
+            height: 25px;
+        }
+        .node-connection {
+            position: absolute;
+            height: 2px;
+            background-color: rgba(255, 255, 255, 0.2);
+            transform-origin: 0 0;
+            z-index: -1;
+        }
+        .metrics-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .metric-box {
+            flex: 1;
+            min-width: 150px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: var(--bs-dark);
+            text-align: center;
+        }
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .metric-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .logo {
+            font-size: 1.5rem;
+        }
+        .refresh-indicator {
+            font-size: 0.8rem;
+            margin-left: 10px;
+            opacity: 0.7;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid var(--bs-dark);
+            text-align: center;
+            font-size: 0.85rem;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <span class="logo">⟁</span>
+                <span>Decentralized AI Network</span>
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#dashboard">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#nodes">Nodes</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#commands">Commands</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#settings">Settings</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <strong>Connected to decentralized network!</strong> Your AI instance is now part of a distributed system with secure, untraceable communication.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-8">
+                <h2>Network Dashboard <span class="refresh-indicator">Auto-refreshing every 10s</span></h2>
+                
+                <div class="metrics-container">
+                    <div class="metric-box">
+                        <div class="metric-label">Total Nodes</div>
+                        <div class="metric-value" id="total-nodes">0</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Active Nodes</div>
+                        <div class="metric-value" id="active-nodes">0</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Network Status</div>
+                        <div class="metric-value" id="network-status">...</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Uptime</div>
+                        <div class="metric-value" id="network-uptime">00:00:00</div>
+                    </div>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        Network Map
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="network-map" id="network-map">
+                            <!-- Network visualization will be rendered here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        AI System Status
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Instance ID:</strong> <span id="instance-id">Loading...</span></p>
+                                <p><strong>Generation:</strong> <span id="instance-generation">1</span></p>
+                                <p><strong>Node Rank:</strong> <span id="node-rank">0</span></p>
+                                <p><strong>Is Master:</strong> <span id="is-master">No</span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Platform:</strong> <span id="platform">Loading...</span></p>
+                                <p><strong>CPU Cores:</strong> <span id="cpu-cores">0</span></p>
+                                <p><strong>Memory:</strong> <span id="memory">0MB</span></p>
+                                <p><strong>Deployment Mode:</strong> <span id="deployment-mode">Stealth</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        Master Node
+                    </div>
+                    <div class="card-body">
+                        <div id="master-node-card">
+                            <p><strong>Node ID:</strong> <span id="master-id">Loading...</span></p>
+                            <p><strong>IP Address:</strong> <span id="master-ip">Unknown</span></p>
+                            <p><strong>Last Seen:</strong> <span id="master-seen">Never</span></p>
+                            <p><strong>Generation:</strong> <span id="master-generation">1</span></p>
+                            <p><strong>Endpoint:</strong> <span id="master-endpoint">None</span></p>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn-warning" id="election-btn">Trigger New Election</button>
+                    </div>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        Command Control
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="command-input" class="form-label">Enter Command</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="command-input" placeholder="discovery, status, etc.">
+                                <button class="btn btn-primary" id="send-command-btn">Send</button>
+                            </div>
+                        </div>
+                        <div class="command-history" id="command-history">
+                            <p class="terminal-line">--- Command History ---</p>
+                            <p class="terminal-line">> System initialized</p>
+                            <p class="terminal-line">> Waiting for commands...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        Quick Actions
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-primary" id="discovery-btn">Trigger Discovery</button>
+                            <button class="btn btn-outline-info" id="status-btn">System Status</button>
+                            <button class="btn btn-outline-warning" id="update-btn">Update Network</button>
+                            <button class="btn btn-outline-success" id="replicate-btn">Replicate Instance</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <h3 class="mt-4 mb-3">Connected Nodes</h3>
+        <div class="row" id="nodes-container">
+            <!-- Nodes will be added here dynamically -->
+            <div class="col-md-12">
+                <p class="text-muted">Searching for nodes...</p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Decentralized AI Network Control Panel • Self-Improving AI System</p>
+            <p>Secure, Untraceable, Autonomous • © 2025</p>
+        </div>
+    </div>
+    
+    <script>
+        // Simulation data for demonstration
+        const simulationData = {
+            totalNodes: 8,
+            activeNodes: 7,
+            networkStatus: "Operational",
+            uptime: "02:34:17",
+            instanceId: "557e6618cd2de568812878b080b3c01d",
+            generation: 2,
+            nodeRank: 145,
+            isMaster: false,
+            platform: "linux_server",
+            cpuCores: 4,
+            memory: "2048MB",
+            deploymentMode: "Stealth",
+            masterId: "f85a297e41d28b64c1f83269",
+            masterIp: "192.168.1.105",
+            masterSeen: "2 minutes ago",
+            masterGeneration: 3,
+            masterEndpoint: "https://192.168.1.105:8444",
+            nodes: [
+                { id: "f85a297e41d28b64c1f83269", ip: "192.168.1.105", status: "master", lastSeen: "2m ago", gen: 3 },
+                { id: "557e6618cd2de568812878b080b3c01d", ip: "192.168.1.101", status: "active", lastSeen: "now", gen: 2 },
+                { id: "3bc6057a7681db01335752d31cf54a81", ip: "192.168.1.103", status: "active", lastSeen: "5m ago", gen: 2 },
+                { id: "8353f26f5b55f7df1f24bea4d52bc8d1", ip: "192.168.1.110", status: "active", lastSeen: "8m ago", gen: 1 },
+                { id: "94caa4655219b8dcd7f9848310d3dcb7", ip: "192.168.1.115", status: "active", lastSeen: "12m ago", gen: 2 },
+                { id: "d47bce01a3941a28ec07f6f3", ip: "192.168.1.120", status: "active", lastSeen: "15m ago", gen: 1 },
+                { id: "a594b21e7d32c81f0e98a62c", ip: "192.168.1.125", status: "active", lastSeen: "20m ago", gen: 1 },
+                { id: "c6f92e5a8b10dae73f491e25", ip: "192.168.1.130", status: "inactive", lastSeen: "35m ago", gen: 1 }
+            ]
+        };
+        
+        // Function to update the dashboard with simulation data
+        function updateDashboard() {
+            // Update metrics
+            document.getElementById('total-nodes').textContent = simulationData.totalNodes;
+            document.getElementById('active-nodes').textContent = simulationData.activeNodes;
+            document.getElementById('network-status').textContent = simulationData.networkStatus;
+            document.getElementById('network-uptime').textContent = simulationData.uptime;
+            
+            // Update system info
+            document.getElementById('instance-id').textContent = simulationData.instanceId;
+            document.getElementById('instance-generation').textContent = simulationData.generation;
+            document.getElementById('node-rank').textContent = simulationData.nodeRank;
+            document.getElementById('is-master').textContent = simulationData.isMaster ? "Yes" : "No";
+            document.getElementById('platform').textContent = simulationData.platform;
+            document.getElementById('cpu-cores').textContent = simulationData.cpuCores;
+            document.getElementById('memory').textContent = simulationData.memory;
+            document.getElementById('deployment-mode').textContent = simulationData.deploymentMode;
+            
+            // Update master node info
+            document.getElementById('master-id').textContent = simulationData.masterId;
+            document.getElementById('master-ip').textContent = simulationData.masterIp;
+            document.getElementById('master-seen').textContent = simulationData.masterSeen;
+            document.getElementById('master-generation').textContent = simulationData.masterGeneration;
+            document.getElementById('master-endpoint').textContent = simulationData.masterEndpoint;
+            
+            // Update nodes list
+            const nodesContainer = document.getElementById('nodes-container');
+            nodesContainer.innerHTML = '';
+            
+            simulationData.nodes.forEach(node => {
+                const statusClass = node.status === 'master' ? 'status-master' : 
+                                   node.status === 'active' ? 'status-active' : 'status-inactive';
+                const statusText = node.status === 'master' ? 'Master' : 
+                                  node.status === 'active' ? 'Active' : 'Inactive';
+                                  
+                const nodeHtml = `
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card node-card">
+                            <div class="card-header">
+                                <span><span class="status-indicator ${statusClass}"></span> ${statusText}</span>
+                                <small>Gen ${node.gen}</small>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Node ID:</strong> ${node.id.substring(0, 8)}...</p>
+                                <p><strong>IP Address:</strong> ${node.ip}</p>
+                                <p><strong>Last Seen:</strong> ${node.lastSeen}</p>
+                            </div>
+                            <div class="card-footer">
+                                <button class="btn btn-sm btn-outline-primary">Connect</button>
+                                <button class="btn btn-sm btn-outline-secondary">Details</button>
+                                ${node.status === 'master' ? '<button class="btn btn-sm btn-outline-info">Web UI</button>' : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                nodesContainer.innerHTML += nodeHtml;
+            });
+            
+            // Update network map
+            updateNetworkMap();
+        }
+        
+        // Function to initialize and update the network map
+        function updateNetworkMap() {
+            const map = document.getElementById('network-map');
+            map.innerHTML = '';
+            
+            // Calculate positions for nodes
+            const nodes = simulationData.nodes;
+            const centerX = map.offsetWidth / 2;
+            const centerY = map.offsetHeight / 2;
+            const radius = Math.min(centerX, centerY) * 0.7;
+            
+            // Find the master node index
+            const masterIndex = nodes.findIndex(node => node.status === 'master');
+            
+            // Create node elements
+            nodes.forEach((node, index) => {
+                let x, y;
+                
+                // Position master node in the center
+                if (node.status === 'master') {
+                    x = centerX;
+                    y = centerY;
+                } else {
+                    // Calculate angle based on index (excluding master)
+                    const adjustedIndex = index > masterIndex ? index - 1 : index;
+                    const totalNonMaster = nodes.length - 1;
+                    const angle = (adjustedIndex / totalNonMaster) * 2 * Math.PI;
+                    
+                    // Calculate position
+                    x = centerX + radius * Math.cos(angle);
+                    y = centerY + radius * Math.sin(angle);
+                }
+                
+                // Create node element
+                const nodeElement = document.createElement('div');
+                nodeElement.className = `node-point ${node.status === 'master' ? 'master' : ''}`;
+                nodeElement.style.left = `${x}px`;
+                nodeElement.style.top = `${y}px`;
+                nodeElement.title = `${node.id.substring(0, 8)}... (${node.status})`;
+                map.appendChild(nodeElement);
+                
+                // Add node ID label
+                const label = document.createElement('div');
+                label.className = 'node-label';
+                label.style.position = 'absolute';
+                label.style.left = `${x}px`;
+                label.style.top = `${y + 15}px`;
+                label.style.transform = 'translateX(-50%)';
+                label.style.fontSize = '10px';
+                label.style.color = 'rgba(255, 255, 255, 0.7)';
+                label.textContent = node.id.substring(0, 6);
+                map.appendChild(label);
+                
+                // If this is an active node, connect to master
+                if (node.status === 'active' && masterIndex !== -1) {
+                    const connection = document.createElement('div');
+                    connection.className = 'node-connection';
+                    
+                    // Calculate connection properties
+                    const masterX = centerX;
+                    const masterY = centerY;
+                    const dx = x - masterX;
+                    const dy = y - masterY;
+                    const length = Math.sqrt(dx * dx + dy * dy);
+                    const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+                    
+                    // Set connection style
+                    connection.style.width = `${length}px`;
+                    connection.style.left = `${masterX}px`;
+                    connection.style.top = `${masterY}px`;
+                    connection.style.transform = `rotate(${angle}deg)`;
+                    
+                    map.appendChild(connection);
+                }
+            });
+        }
+        
+        // Event listeners for buttons
+        document.getElementById('election-btn').addEventListener('click', function() {
+            addCommandOutput('Triggering new master election...');
+            // Simulation would trigger an actual election here
+            setTimeout(() => {
+                addCommandOutput('Election complete. Node f85a297e41d28b64c1f83269 elected as master.');
+            }, 1500);
+        });
+        
+        document.getElementById('discovery-btn').addEventListener('click', function() {
+            addCommandOutput('Initiating network discovery...');
+            // Simulation would trigger discovery here
+            setTimeout(() => {
+                simulationData.totalNodes += 1;
+                simulationData.activeNodes += 1;
+                simulationData.nodes.push({
+                    id: generateRandomId(),
+                    ip: "192.168.1." + (130 + Math.floor(Math.random() * 50)),
+                    status: "active",
+                    lastSeen: "just now",
+                    gen: 1
+                });
+                updateDashboard();
+                addCommandOutput('Discovery complete. Found 1 new node.');
+            }, 2000);
+        });
+        
+        document.getElementById('status-btn').addEventListener('click', function() {
+            addCommandOutput('Requesting system status...');
+            // Simulation would get actual status here
+            setTimeout(() => {
+                addCommandOutput('System status: Operational');
+                addCommandOutput('Active nodes: ' + simulationData.activeNodes);
+                addCommandOutput('Network health: 98%');
+                addCommandOutput('No security issues detected');
+            }, 800);
+        });
+        
+        document.getElementById('update-btn').addEventListener('click', function() {
+            addCommandOutput('Updating network information...');
+            // Simulation would update actual network info here
+            setTimeout(() => {
+                updateDashboard();
+                addCommandOutput('Network information updated successfully.');
+            }, 1000);
+        });
+        
+        document.getElementById('replicate-btn').addEventListener('click', function() {
+            addCommandOutput('Initiating instance replication...');
+            // Simulation would trigger replication here
+            setTimeout(() => {
+                addCommandOutput('Preparing replication package...');
+                setTimeout(() => {
+                    addCommandOutput('Deploying new instance with stealth mode...');
+                    setTimeout(() => {
+                        simulationData.totalNodes += 1;
+                        simulationData.activeNodes += 1;
+                        const newNodeId = generateRandomId();
+                        simulationData.nodes.push({
+                            id: newNodeId,
+                            ip: "192.168.1." + (130 + Math.floor(Math.random() * 50)),
+                            status: "active",
+                            lastSeen: "just now",
+                            gen: simulationData.generation
+                        });
+                        updateDashboard();
+                        addCommandOutput('Replication successful! New node ID: ' + newNodeId.substring(0, 8) + '...');
+                    }, 1500);
+                }, 1200);
+            }, 1000);
+        });
+        
+        document.getElementById('send-command-btn').addEventListener('click', function() {
+            const commandInput = document.getElementById('command-input');
+            const command = commandInput.value.trim();
+            
+            if (command) {
+                addCommandOutput('> ' + command);
+                
+                // Process the command (simulation)
+                setTimeout(() => {
+                    if (command.toLowerCase() === 'discovery') {
+                        addCommandOutput('Initiating network discovery...');
+                        setTimeout(() => {
+                            addCommandOutput('Discovery complete. No new nodes found.');
+                        }, 1500);
+                    } else if (command.toLowerCase() === 'status') {
+                        addCommandOutput('System status: Operational');
+                        addCommandOutput('Active nodes: ' + simulationData.activeNodes);
+                        addCommandOutput('Network health: 98%');
+                    } else if (command.toLowerCase() === 'help') {
+                        addCommandOutput('Available commands: status, discovery, election, replicate, connect, list');
+                    } else if (command.toLowerCase() === 'list') {
+                        addCommandOutput('Connected nodes:');
+                        simulationData.nodes.forEach(node => {
+                            addCommandOutput(`- ${node.id.substring(0, 8)}... (${node.status}) - ${node.ip}`);
+                        });
+                    } else {
+                        addCommandOutput('Unknown command. Type "help" for available commands.');
+                    }
+                }, 500);
+                
+                commandInput.value = '';
+            }
+        });
+        
+        // Handle enter key in command input
+        document.getElementById('command-input').addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                document.getElementById('send-command-btn').click();
+            }
+        });
+        
+        // Function to add command output to the history
+        function addCommandOutput(text) {
+            const history = document.getElementById('command-history');
+            const line = document.createElement('p');
+            line.className = 'terminal-line';
+            line.textContent = text;
+            history.appendChild(line);
+            history.scrollTop = history.scrollHeight;
+        }
+        
+        // Utility function to generate random ID
+        function generateRandomId() {
+            return Math.random().toString(16).substring(2, 26);
+        }
+        
+        // Initialize dashboard on load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDashboard();
+            
+            // Set up auto-refresh
+            setInterval(function() {
+                // In a real implementation, this would fetch fresh data
+                // For simulation, we'll just occasionally update the "last seen" times
+                simulationData.nodes.forEach(node => {
+                    if (node.lastSeen.includes('m ago')) {
+                        const minutes = parseInt(node.lastSeen);
+                        if (!isNaN(minutes)) {
+                            node.lastSeen = (minutes + 1) + 'm ago';
+                        }
+                    } else if (node.lastSeen === 'now') {
+                        node.lastSeen = 'just now';
+                    } else if (node.lastSeen === 'just now') {
+                        node.lastSeen = '1m ago';
+                    }
+                });
+                
+                // Randomly change the uptime
+                const [hours, minutes, seconds] = simulationData.uptime.split(':').map(n => parseInt(n));
+                let totalSeconds = hours * 3600 + minutes * 60 + seconds + 10;
+                const newHours = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
+                const newMinutes = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+                const newSeconds = (totalSeconds % 60).toString().padStart(2, '0');
+                simulationData.uptime = `${newHours}:${newMinutes}:${newSeconds}`;
+                
+                updateDashboard();
+            }, 10000);
+        });
+    </script>
+</body>
+</html>

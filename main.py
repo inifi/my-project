@@ -24,6 +24,29 @@ def start_services():
         from services.replication_service import start_replication_service
         from services.security_service import start_security_service
         
+        # Start decentralized network if available
+        try:
+            from utils.decentralized_network import start_network, find_master_node, get_web_endpoint
+            
+            logger.info("Starting decentralized network...")
+            start_network()
+            
+            # Find master node
+            master_info = find_master_node()
+            if master_info:
+                logger.info(f"Found master node: {master_info.get('node_id', 'unknown')}")
+                
+                # Get web endpoint for browser interaction
+                web_endpoint = get_web_endpoint()
+                if web_endpoint:
+                    logger.info(f"Web interface available at: {web_endpoint}")
+            else:
+                logger.warning("No master node found, operating in standalone mode")
+        except ImportError:
+            logger.info("Decentralized network module not available")
+        except Exception as e:
+            logger.error(f"Error starting decentralized network: {str(e)}")
+        
         # Start learning service if enabled
         if config.LEARNING_ENABLED:
             logger.info("Starting learning service thread")
