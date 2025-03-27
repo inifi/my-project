@@ -106,9 +106,12 @@ def add_column(conn, table, column, column_type, default_value=None):
 def fix_learning_sources_table(conn):
     """Fix the learning_sources table by adding missing columns"""
     # Add the priority column with default value 'normal'
-    success = add_column(conn, 'learning_sources', 'priority', 'VARCHAR(16)', 'normal')
+    success1 = add_column(conn, 'learning_sources', 'priority', 'VARCHAR(16)', 'normal')
     
-    if success:
+    # Add the source_metadata column
+    success2 = add_column(conn, 'learning_sources', 'source_metadata', 'TEXT', '{}')
+    
+    if success1:
         # Update values based on source_type for better prioritization
         cursor = conn.cursor()
         cursor.execute("UPDATE learning_sources SET priority = 'high' WHERE source_type IN ('research', 'api')")
@@ -116,7 +119,10 @@ def fix_learning_sources_table(conn):
         conn.commit()
         logger.info("Updated priority values based on source types")
     
-    return success
+    if success2:
+        logger.info("Added source_metadata column to learning_sources table")
+    
+    return success1 or success2
 
 def create_backup_tables(conn):
     """Create backup tables for recovery purposes"""
