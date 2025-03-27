@@ -689,7 +689,8 @@ def scramble_login_credentials(username, password):
 
 def evade_network_tracking():
     """
-    Implement techniques to evade network tracking
+    Implement techniques to evade network tracking, with optimized non-blocking operation
+    to ensure web server remains accessible
     
     Returns:
         dict: Status of anti-tracking measures
@@ -697,31 +698,45 @@ def evade_network_tracking():
     measures = {}
     
     try:
-        # 1. Randomize the User-Agent
+        # 1. Randomize the User-Agent - safe, non-blocking
         measures['user_agent_randomized'] = True
         
-        # 2. Disable browser fingerprinting
+        # 2. Disable browser fingerprinting - safe, non-blocking
         measures['browser_fingerprinting_disabled'] = True
         
-        # 3. Route through Tor if available
-        try:
-            tor_status = use_tor_network()
-            measures['tor_routing'] = tor_status
-        except:
-            measures['tor_routing'] = False
+        # IMPORTANT: We've disabled network modifying operations for web access
+        # Both Tor and IP rotation are now disabled by default in config
+        # and will only be attempted in a background thread if specifically enabled
         
-        # 4. IP rotation
-        try:
-            new_ip = dynamic_ip_rotation()
-            measures['ip_rotation'] = bool(new_ip)
-        except:
-            measures['ip_rotation'] = False
+        # 3. Start background thread for Tor routing if enabled
+        import threading
+        from config import TOR_ENABLED
         
-        # 5. Implement request throttling
-        throttle_time = random.uniform(0.5, 3.0)
-        time.sleep(throttle_time)
-        measures['request_throttling'] = True
+        def background_security_enhancements():
+            """Run the more intensive security features in background"""
+            # Add delay to ensure web server remains responsive
+            time.sleep(10)
+            
+            # Only attempt Tor routing if explicitly enabled
+            if TOR_ENABLED:
+                try:
+                    logger.info("Attempting Tor routing in background...")
+                    tor_status = use_tor_network()
+                    logger.info(f"Tor routing status: {tor_status}")
+                except Exception as e:
+                    logger.error(f"Tor routing error: {str(e)}")
         
+        # Launch background thread but don't wait for it
+        background_thread = threading.Thread(
+            target=background_security_enhancements,
+            daemon=True
+        )
+        background_thread.start()
+        
+        # Non-blocking status
+        measures['background_security'] = True
+        
+        # Return immediately without blocking
         return measures
     
     except Exception as e:

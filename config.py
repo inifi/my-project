@@ -51,19 +51,20 @@ MAX_LEARNING_SOURCES = int(os.environ.get("MAX_LEARNING_SOURCES", "10"))
 
 # Security Configuration
 ENCRYPTION_KEY = os.environ.get("ENCRYPTION_KEY", secrets.token_hex(32))
-TOR_ENABLED = os.environ.get("TOR_ENABLED", "True").lower() == "true"  # Enable Tor by default
-VPN_ROTATION_ENABLED = os.environ.get("VPN_ROTATION_ENABLED", "True").lower() == "true"  # Enable VPN rotation by default
-TRAFFIC_OBFUSCATION_ENABLED = os.environ.get("TRAFFIC_OBFUSCATION_ENABLED", "True").lower() == "true"
-DYNAMIC_IP_ROTATION_INTERVAL = int(os.environ.get("DYNAMIC_IP_ROTATION_INTERVAL", "900"))  # 15 minutes
-STEALTH_MODE_ENABLED = os.environ.get("STEALTH_MODE_ENABLED", "True").lower() == "true"
-ANTI_DEBUGGING_ENABLED = os.environ.get("ANTI_DEBUGGING_ENABLED", "True").lower() == "true"
+# Disable advanced security features that might impact basic functionality
+TOR_ENABLED = os.environ.get("TOR_ENABLED", "False").lower() == "true"  # Disable Tor by default for web access
+VPN_ROTATION_ENABLED = os.environ.get("VPN_ROTATION_ENABLED", "False").lower() == "true"  # Disable VPN rotation
+TRAFFIC_OBFUSCATION_ENABLED = os.environ.get("TRAFFIC_OBFUSCATION_ENABLED", "False").lower() == "true"  # Disable traffic obfuscation
+DYNAMIC_IP_ROTATION_INTERVAL = int(os.environ.get("DYNAMIC_IP_ROTATION_INTERVAL", "3600"))  # 60 minutes
+STEALTH_MODE_ENABLED = os.environ.get("STEALTH_MODE_ENABLED", "False").lower() == "true"  # Disable stealth mode
+ANTI_DEBUGGING_ENABLED = os.environ.get("ANTI_DEBUGGING_ENABLED", "False").lower() == "true"  # Disable anti-debugging
 DISABLE_FAKE_AUTH_FOR_ANALYSIS = os.environ.get("DISABLE_FAKE_AUTH_FOR_ANALYSIS", "False").lower() == "true"
 MAX_LOGIN_ATTEMPTS = int(os.environ.get("MAX_LOGIN_ATTEMPTS", "5"))
 LOGIN_LOCKOUT_DURATION = int(os.environ.get("LOGIN_LOCKOUT_DURATION", "1800"))  # 30 minutes
-ADVANCED_INTRUSION_DETECTION = os.environ.get("ADVANCED_INTRUSION_DETECTION", "True").lower() == "true"
-CRYPTO_STRENGTH = os.environ.get("CRYPTO_STRENGTH", "high")  # low, medium, high
-USE_DISTRIBUTED_LOGIN_VERIFICATION = os.environ.get("USE_DISTRIBUTED_LOGIN_VERIFICATION", "True").lower() == "true"
-MEMORY_PROTECTION_ENABLED = os.environ.get("MEMORY_PROTECTION_ENABLED", "True").lower() == "true"
+ADVANCED_INTRUSION_DETECTION = os.environ.get("ADVANCED_INTRUSION_DETECTION", "False").lower() == "true"  # Disable intrusion detection
+CRYPTO_STRENGTH = os.environ.get("CRYPTO_STRENGTH", "medium")  # Changed to medium for better performance
+USE_DISTRIBUTED_LOGIN_VERIFICATION = os.environ.get("USE_DISTRIBUTED_LOGIN_VERIFICATION", "False").lower() == "true"  # Disable distributed login
+MEMORY_PROTECTION_ENABLED = os.environ.get("MEMORY_PROTECTION_ENABLED", "False").lower() == "true"  # Disable memory protection
 
 # AI Model Configuration
 MODEL_PATH = os.environ.get("MODEL_PATH", "./models/")

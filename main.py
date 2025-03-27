@@ -75,11 +75,10 @@ if __name__ == "__main__":
     services_thread = threading.Thread(target=start_services, daemon=True)
     services_thread.start()
     
-    # Start the Flask application with SocketIO
-    socketio.run(
-        app, 
+    # Start the Flask application (standard mode for Replit compatibility)
+    # In production with Replit, gunicorn will handle this
+    app.run(
         host=config.FLASK_HOST, 
         port=config.FLASK_PORT, 
-        debug=config.DEBUG,
-        allow_unsafe_werkzeug=True  # For development only
+        debug=config.DEBUG
     )
