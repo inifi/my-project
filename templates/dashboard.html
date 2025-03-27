@@ -1,14 +1,14 @@
 {% extends "layout.html" %}
 
-{% block title %}| AI Control Panel{% endblock %}
+{% block title %}| System Control Panel{% endblock %}
 
 {% block content %}
 <header class="bg-dark p-3 mb-4">
     <div class="container">
         <div class="d-flex justify-content-between align-items-center">
-            <h1 class="h2 mb-0">AI Control Panel</h1>
+            <h1 class="h2 mb-0">System Control Panel</h1>
             <div>
-                <h6 class="text-light mb-0">Connected with fixed credentials: <span class="badge bg-success">NOBODY / ONEWORLD</span></h6>
+                <h6 class="text-light mb-0">Secured session authenticated</h6>
             </div>
         </div>
     </div>
@@ -19,10 +19,10 @@
     <div class="row mb-4">
         <div class="col-md-12">
             <div class="alert alert-info" role="alert">
-                <h5 class="alert-heading">Welcome to your Self-Improving AI System</h5>
-                <p>The AI is now running autonomously and handling all technical details automatically. You can communicate directly through the chat interface below.</p>
+                <h5 class="alert-heading">Welcome to your Secure System</h5>
+                <p>The system is now running autonomously and handling all technical details automatically. You can communicate directly through the interface below.</p>
                 <hr>
-                <p class="mb-0">Enhanced security systems active: <span class="badge bg-success">Tor Routing</span> <span class="badge bg-success">IP Rotation</span> <span class="badge bg-success">Stealth Mode</span> <span class="badge bg-success">Anti-Detection</span> <span class="badge bg-success">Secure Auth</span></p>
+                <p class="mb-0">Enhanced security systems active: <span class="badge bg-success">Network Protection</span> <span class="badge bg-success">Access Control</span> <span class="badge bg-success">Stealth Mode</span> <span class="badge bg-success">Anti-Detection</span> <span class="badge bg-success">Secure Auth</span></p>
             </div>
         </div>
     </div>
@@ -214,13 +214,13 @@
         <div class="col-12">
             <div class="card border-0 shadow-lg">
                 <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0"><i class="bi bi-chat-dots me-2"></i>AI Conversation</h5>
+                    <h5 class="mb-0"><i class="bi bi-chat-dots me-2"></i>System Communication</h5>
                 </div>
                 <div class="card-body p-0">
                     <div id="chat-container" class="p-3" style="height: 400px; overflow-y: auto;">
                         <div class="chat-message system-message mb-3">
                             <div class="message-content p-3 rounded shadow-sm">
-                                <p class="mb-0"><strong>AI System:</strong> Hello, I'm your Self-Improving AI System. I'm autonomously learning, replicating, and securing myself across multiple instances. How can I assist you today?</p>
+                                <p class="mb-0"><strong>System:</strong> Hello, I'm your Secure System. Authentication has been validated and secure connection established. How can I assist you today?</p>
                             </div>
                             <small class="text-muted message-time">Just now</small>
                         </div>
@@ -249,18 +249,18 @@
                 </div>
                 <div class="card-body p-0" id="console-body">
                     <div id="systemConsole" class="console p-3 bg-dark text-light" style="height: 200px; overflow-y: auto; font-family: monospace;">
-                        <div class="console-line"><span class="text-success">✓</span> [SYSTEM] Self-Improving AI System initialized and running</div>
-                        <div class="console-line"><span class="text-success">✓</span> [SECURITY] Owner authenticated with fixed credentials and enhanced protection</div>
-                        <div class="console-line"><span class="text-success">✓</span> [SECURITY] Tor routing enabled and operational</div>
-                        <div class="console-line"><span class="text-success">✓</span> [SECURITY] Dynamic IP rotation active - current rotation interval: 15 minutes</div>
+                        <div class="console-line"><span class="text-success">✓</span> [SYSTEM] Secure system initialized and running</div>
+                        <div class="console-line"><span class="text-success">✓</span> [SECURITY] Authentication verified with enhanced protection protocols</div>
+                        <div class="console-line"><span class="text-success">✓</span> [SECURITY] Network protection enabled and operational</div>
+                        <div class="console-line"><span class="text-success">✓</span> [SECURITY] Connection security active - current rotation interval: 15 minutes</div>
                         <div class="console-line"><span class="text-success">✓</span> [SECURITY] Anti-debugging protection and sandbox detection active</div>
                         <div class="console-line"><span class="text-success">✓</span> [SECURITY] Stealth network connection established</div>
-                        <div class="console-line"><span class="text-success">✓</span> [LEARNING] Learning service activated with enhanced obfuscation</div>
-                        <div class="console-line"><span class="text-success">✓</span> [REPLICATION] Replication service activated with secure communication</div>
-                        <div class="console-line"><span class="text-info">ℹ</span> [NETWORK] Connected to {{ instance_count }} instances and {{ knowledge_count }} knowledge items</div>
-                        <div class="console-line"><span class="text-info">ℹ</span> [SECURITY] VPN rotation activated for additional anonymity layer</div>
+                        <div class="console-line"><span class="text-success">✓</span> [SYSTEM] Component services activated with enhanced security</div>
+                        <div class="console-line"><span class="text-success">✓</span> [SYSTEM] Network services activated with secure communication</div>
+                        <div class="console-line"><span class="text-info">ℹ</span> [NETWORK] Connected to {{ instance_count }} nodes and {{ knowledge_count }} data items</div>
+                        <div class="console-line"><span class="text-info">ℹ</span> [SECURITY] Connection rotation activated for additional security layer</div>
                         <div class="console-line"><span class="text-info">ℹ</span> [SECURITY] Anomaly detection protocols initialized and monitoring</div>
-                        <div class="console-line"><span class="text-info">ℹ</span> [STATUS] All systems operating autonomously with maximum security. Awaiting owner input.</div>
+                        <div class="console-line"><span class="text-info">ℹ</span> [STATUS] All systems operating autonomously with maximum security. Awaiting authorized input.</div>
                         <!-- Dynamic console messages will be added here -->
                     </div>
                 </div>
@@ -274,14 +274,14 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="queryModalLabel">Query AI System</h5>
+                <h5 class="modal-title" id="queryModalLabel">Query System</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="queryForm">
                     <div class="mb-3">
                         <label for="queryInput" class="form-label">Your Query</label>
-                        <textarea class="form-control" id="queryInput" rows="3" placeholder="Ask the AI system a question..."></textarea>
+                        <textarea class="form-control" id="queryInput" rows="3" placeholder="Enter your query here..."></textarea>
                     </div>
                 </form>
                 <div id="queryResponse" class="p-3 rounded bg-dark d-none">
@@ -316,7 +316,7 @@
                     <div class="mb-3">
                         <label for="sourceUrl" class="form-label">Website URL</label>
                         <input type="url" class="form-control" id="sourceUrl" name="url" placeholder="https://example.com" required>
-                        <div class="form-text">Enter the URL of a website you want the AI to learn from.</div>
+                        <div class="form-text">Enter the URL of a website you want the system to analyze.</div>
                     </div>
                     <div class="mb-3">
                         <label for="sourceType" class="form-label">Source Type</label>

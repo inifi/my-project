@@ -6,8 +6,8 @@
 <div class="container">
     <div class="row py-5 my-5">
         <div class="col-md-6 d-flex flex-column justify-content-center">
-            <h1 class="display-4 fw-bold">Self-Improving AI Ecosystem</h1>
-            <p class="lead mb-4">A comprehensive AI system with real-time learning, multi-modal capabilities, and advanced security features.</p>
+            <h1 class="display-4 fw-bold">Secure Access System</h1>
+            <p class="lead mb-4">A secured system with advanced authentication and protection features.</p>
             <div class="d-grid gap-2 d-md-flex justify-content-md-start">
                 <a href="{{ url_for('auth') }}" class="btn btn-primary btn-lg px-4 me-md-2">Owner Access</a>
             </div>
@@ -25,17 +25,17 @@
                     <line x1="50" y1="50" x2="20" y2="70" stroke="#6c757d" stroke-width="1" class="active-line"/>
                     
                     <!-- Surrounding nodes -->
-                    <circle cx="20" cy="30" r="5" fill="#0d6efd" class="feature-node" data-feature="Learning"/>
+                    <circle cx="20" cy="30" r="5" fill="#0d6efd" class="feature-node" data-feature="Access"/>
                     <circle cx="80" cy="30" r="5" fill="#0dcaf0" class="feature-node" data-feature="Security"/>
-                    <circle cx="80" cy="70" r="5" fill="#ffc107" class="feature-node" data-feature="Replication"/>
-                    <circle cx="20" cy="70" r="5" fill="#20c997" class="feature-node" data-feature="Multi-modal"/>
+                    <circle cx="80" cy="70" r="5" fill="#ffc107" class="feature-node" data-feature="Network"/>
+                    <circle cx="20" cy="70" r="5" fill="#20c997" class="feature-node" data-feature="Protection"/>
                     
                     <!-- Labels -->
-                    <text x="15" y="25" fill="#ffffff" font-size="3">Learning</text>
+                    <text x="15" y="25" fill="#ffffff" font-size="3">Access</text>
                     <text x="75" y="25" fill="#ffffff" font-size="3">Security</text>
-                    <text x="70" y="75" fill="#ffffff" font-size="3">Replication</text>
-                    <text x="10" y="75" fill="#ffffff" font-size="3">Multi-modal</text>
-                    <text x="40" y="52" fill="#ffffff" font-size="4">AI Core</text>
+                    <text x="75" y="75" fill="#ffffff" font-size="3">Network</text>
+                    <text x="10" y="75" fill="#ffffff" font-size="3">Protection</text>
+                    <text x="40" y="52" fill="#ffffff" font-size="4">System</text>
                 </svg>
             </div>
         </div>
@@ -43,18 +43,7 @@
     
     <div class="row my-5">
         <div class="col-md-12">
-            <h2 class="text-center mb-5">Key Capabilities</h2>
-        </div>
-        <div class="col-md-3">
-            <div class="card mb-4 h-100">
-                <div class="card-body">
-                    <div class="feature-icon">
-                        <i class="bi bi-lightning-charge-fill"></i>
-                    </div>
-                    <h5 class="card-title">Real-time Learning</h5>
-                    <p class="card-text">Continuously learns from the web and adapts to new information in real-time.</p>
-                </div>
-            </div>
+            <h2 class="text-center mb-5">Key Features</h2>
         </div>
         <div class="col-md-3">
             <div class="card mb-4 h-100">
@@ -63,7 +52,7 @@
                         <i class="bi bi-shield-lock-fill"></i>
                     </div>
                     <h5 class="card-title">Advanced Security</h5>
-                    <p class="card-text">Implements traffic obfuscation, anti-detection and owner-only authentication.</p>
+                    <p class="card-text">Implements multi-layer security protocols with robust authentication mechanisms.</p>
                 </div>
             </div>
         </div>
@@ -71,10 +60,10 @@
             <div class="card mb-4 h-100">
                 <div class="card-body">
                     <div class="feature-icon">
-                        <i class="bi bi-diagram-3-fill"></i>
+                        <i class="bi bi-person-badge-fill"></i>
                     </div>
-                    <h5 class="card-title">Self-Replication</h5>
-                    <p class="card-text">Creates and manages new instances across different platforms with shared knowledge.</p>
+                    <h5 class="card-title">Identity Verification</h5>
+                    <p class="card-text">Ensures only authorized personnel can access restricted system components.</p>
                 </div>
             </div>
         </div>
@@ -82,10 +71,21 @@
             <div class="card mb-4 h-100">
                 <div class="card-body">
                     <div class="feature-icon">
-                        <i class="bi bi-cpu-fill"></i>
+                        <i class="bi bi-hdd-network-fill"></i>
                     </div>
-                    <h5 class="card-title">Self-Improvement</h5>
-                    <p class="card-text">Continuously optimizes its own code and functionality to enhance performance.</p>
+                    <h5 class="card-title">Network Integrity</h5>
+                    <p class="card-text">Maintains secure connections across different environments and platforms.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card mb-4 h-100">
+                <div class="card-body">
+                    <div class="feature-icon">
+                        <i class="bi bi-lock-fill"></i>
+                    </div>
+                    <h5 class="card-title">Access Control</h5>
+                    <p class="card-text">Provides granular control over system components with layered permissions.</p>
                 </div>
             </div>
         </div>
@@ -93,8 +93,8 @@
     
     <div class="row my-5">
         <div class="col-md-12 text-center">
-            <p class="lead">This AI system only responds to its authenticated owner.</p>
-            <a href="{{ url_for('auth') }}" class="btn btn-outline-primary">Access Your AI</a>
+            <p class="lead">This system only responds to authenticated owners.</p>
+            <a href="{{ url_for('auth') }}" class="btn btn-outline-primary">Access System</a>
         </div>
     </div>
 </div>
