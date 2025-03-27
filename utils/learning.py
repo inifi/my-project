@@ -27,7 +27,7 @@ def update_knowledge_base(app, socketio=None):
     
     This function:
     1. Retrieves active learning sources from the database
-    2. Processes each source to extract valuable information
+    2. Processes each source to extract valuable information in parallel threads
     3. Filters out duplicate or low-quality information
     4. Stores new knowledge in the database
     5. Reports progress in real-time via socketio if available
@@ -39,24 +39,33 @@ def update_knowledge_base(app, socketio=None):
     with app.app_context():
         from models import LearningSource, KnowledgeBase, SecurityLog
         from app import db
+        import threading
+        from concurrent.futures import ThreadPoolExecutor, as_completed
         
-        logger.info("Starting knowledge base update")
+        logger.info("Starting enhanced knowledge base update with parallel processing")
         
         # Emit update status if socketio is available
         if socketio:
-            socketio.emit('system_message', {'message': 'Starting knowledge base update...'})
+            socketio.emit('system_message', {'message': 'Starting super fast knowledge base update with parallel processing...'})
         
-        # Get learning sources that need to be updated
+        # Get learning sources that need to be updated - increased limit to process more sources
         now = datetime.utcnow()
         sources = LearningSource.query.filter(
             (LearningSource.last_accessed == None) |  # Never accessed
-            (LearningSource.last_accessed < now - timedelta(days=1))  # Accessed more than a day ago
-        ).filter_by(status='active').limit(10).all()
+            (LearningSource.last_accessed < now - timedelta(hours=1))  # Changed from days to hours for faster learning
+        ).filter_by(status='active').limit(25).all()  # Increased from 10 to 25
         
         logger.info(f"Found {len(sources)} learning sources to update")
         
-        # Process each source
-        for source in sources:
+        # Define a worker function to process a single source
+        def process_source(source):
+            source_result = {
+                'url': source.url,
+                'success': False,
+                'error': None,
+                'knowledge_items': 0
+            }
+            
             try:
                 logger.info(f"Processing learning source: {source.url}")
                 
@@ -64,24 +73,29 @@ def update_knowledge_base(app, socketio=None):
                 if socketio:
                     socketio.emit('system_message', {'message': f'Learning from {source.url}...'})
                 
-                # Add random delay to avoid detection
-                time.sleep(random.uniform(1.0, 3.0))
+                # Reduced delay to speed up learning
+                time.sleep(random.uniform(0.2, 0.5))
                 
-                # Scrape website content
-                result = scrape_website(source.url, obfuscate=True)
+                # Scrape website content using fast mode for better performance
+                result = scrape_website(source.url, obfuscate=True, timeout=15, fast_mode=True)
                 
                 if result['success'] and result['content']:
-                    # Update source access information
-                    source.last_accessed = now
-                    source.access_count += 1
-                    db.session.commit()
+                    with app.app_context():
+                        # Update source access information
+                        source.last_accessed = now
+                        source.access_count += 1
+                        db.session.commit()
                     
                     # Process and store the knowledge
-                    process_and_store_knowledge(app, result, source)
+                    knowledge_count = process_and_store_knowledge(app, result, source)
+                    source_result['knowledge_items'] = knowledge_count
                     
                     # Extract and queue additional links if needed
                     if source.source_type == 'website' and source.access_count < 5:
-                        process_additional_links(app, result, source)
+                        additional_links = process_additional_links(app, result, source)
+                        source_result['additional_links'] = additional_links
+                    
+                    source_result['success'] = True
                     
                     # Emit success message
                     if socketio:
@@ -89,19 +103,22 @@ def update_knowledge_base(app, socketio=None):
                             'message': f'Successfully learned from {source.url}'
                         })
                 else:
-                    # Update source with error status
-                    source.status = 'error'
-                    db.session.commit()
+                    with app.app_context():
+                        # Update source with error status
+                        source.status = 'error'
+                        db.session.commit()
+                        
+                        # Log the error
+                        error_log = SecurityLog(
+                            event_type='learning_error',
+                            description=f"Failed to learn from {source.url}: {result.get('error', 'Unknown error')}",
+                            severity='warning',
+                            timestamp=now
+                        )
+                        db.session.add(error_log)
+                        db.session.commit()
                     
-                    # Log the error
-                    error_log = SecurityLog(
-                        event_type='learning_error',
-                        description=f"Failed to learn from {source.url}: {result.get('error', 'Unknown error')}",
-                        severity='warning',
-                        timestamp=now
-                    )
-                    db.session.add(error_log)
-                    db.session.commit()
+                    source_result['error'] = result.get('error', 'Unknown error')
                     
                     # Emit error message
                     if socketio:
@@ -112,31 +129,64 @@ def update_knowledge_base(app, socketio=None):
             except Exception as e:
                 logger.error(f"Error processing learning source {source.url}: {str(e)}")
                 
-                # Update source with error status
-                source.status = 'error'
-                db.session.commit()
+                with app.app_context():
+                    # Update source with error status
+                    source.status = 'error'
+                    db.session.commit()
+                    
+                    # Log the error
+                    error_log = SecurityLog(
+                        event_type='learning_error',
+                        description=f"Exception while learning from {source.url}: {str(e)}",
+                        severity='warning',
+                        timestamp=now
+                    )
+                    db.session.add(error_log)
+                    db.session.commit()
                 
-                # Log the error
-                error_log = SecurityLog(
-                    event_type='learning_error',
-                    description=f"Exception while learning from {source.url}: {str(e)}",
-                    severity='warning',
-                    timestamp=now
-                )
-                db.session.add(error_log)
-                db.session.commit()
+                source_result['error'] = str(e)
                 
                 # Emit error message
                 if socketio:
                     socketio.emit('system_message', {
                         'message': f'Error processing {source.url}: {str(e)}'
                     })
+            
+            return source_result
         
-        logger.info("Knowledge base update completed")
+        # Process sources in parallel using a thread pool
+        results = []
         
-        # Emit completion message
+        # Determine max workers based on sources count but not more than CPU cores * 2
+        import multiprocessing
+        max_workers = min(len(sources), multiprocessing.cpu_count() * 2)
+        
+        # Use ThreadPoolExecutor to process sources in parallel
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Submit all source processing tasks
+            future_to_source = {executor.submit(process_source, source): source for source in sources}
+            
+            # Collect results as they complete
+            for future in as_completed(future_to_source):
+                source = future_to_source[future]
+                try:
+                    result = future.result()
+                    results.append(result)
+                    logger.info(f"Completed processing {source.url}, success: {result['success']}")
+                except Exception as e:
+                    logger.error(f"Exception processing {source.url}: {str(e)}")
+        
+        # Summarize results
+        successful = [r for r in results if r['success']]
+        failed = [r for r in results if not r['success']]
+        
+        logger.info(f"Knowledge base update completed: {len(successful)} sources processed successfully, {len(failed)} failed")
+        
+        # Emit completion message with statistics
         if socketio:
-            socketio.emit('system_message', {'message': 'Knowledge base update completed'})
+            socketio.emit('system_message', {
+                'message': f'Knowledge base update completed: {len(successful)} sources processed successfully, {len(failed)} failed'
+            })
 
 def process_and_store_knowledge(app, scraped_result, source):
     """
@@ -146,6 +196,9 @@ def process_and_store_knowledge(app, scraped_result, source):
         app: Flask application context
         scraped_result: Result from web scraping
         source: LearningSource model instance
+        
+    Returns:
+        int: Number of knowledge items stored
     """
     with app.app_context():
         from models import KnowledgeBase
@@ -158,7 +211,7 @@ def process_and_store_knowledge(app, scraped_result, source):
         # Skip if content is too short
         if len(content) < 100:
             logger.warning(f"Content from {url} too short, skipping")
-            return
+            return 0
         
         # Split content into manageable chunks (sentences or paragraphs)
         sentences = sent_tokenize(content)
@@ -179,6 +232,7 @@ def process_and_store_knowledge(app, scraped_result, source):
             chunks.append(current_chunk.strip())
         
         # Process and store each chunk
+        knowledge_count = 0
         for chunk in chunks:
             # Skip short or low-information chunks
             if len(chunk) < 50 or not any(c.isalpha() for c in chunk):
@@ -199,10 +253,12 @@ def process_and_store_knowledge(app, scraped_result, source):
                 )
                 
                 db.session.add(knowledge)
+                knowledge_count += 1
         
         # Commit all new knowledge at once
         db.session.commit()
-        logger.info(f"Stored new knowledge from {url}")
+        logger.info(f"Stored {knowledge_count} new knowledge items from {url}")
+        return knowledge_count
 
 def check_duplicate_knowledge(app, content, similarity_threshold=0.8):
     """
@@ -261,6 +317,9 @@ def process_additional_links(app, scraped_result, source):
         app: Flask application context
         scraped_result: Result from web scraping
         source: LearningSource model instance
+    
+    Returns:
+        int: Number of additional links added
     """
     with app.app_context():
         from models import LearningSource
@@ -271,15 +330,15 @@ def process_additional_links(app, scraped_result, source):
             html_content = scraped_result['downloaded']
         else:
             # No HTML content available
-            return
+            return 0
         
-        # Extract links
-        links = extract_links(html_content, source.url)
+        # Extract links with the enhanced function (using fast mode for better performance)
+        links = extract_links(html_content, source.url, max_links=5, fast_mode=True)
         
-        # Shuffle and limit the number of links to process
-        random.shuffle(links)
-        links = links[:5]  # Limit to 5 additional links
+        # Since the extract_links function now has built-in limiting and optimization,
+        # we don't need to shuffle and limit the links anymore
         
+        added_count = 0
         for link in links:
             # Check if link already exists in learning sources
             existing = LearningSource.query.filter_by(url=link).first()
@@ -295,10 +354,12 @@ def process_additional_links(app, scraped_result, source):
                 )
                 
                 db.session.add(new_source)
+                added_count += 1
         
         # Commit all new sources
         db.session.commit()
-        logger.info(f"Added {len(links)} new learning sources from {source.url}")
+        logger.info(f"Added {added_count} new learning sources from {source.url}")
+        return added_count
 
 def analyze_sentiment(text):
     """

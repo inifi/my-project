@@ -45,25 +45,136 @@ def start_learning_service(app, socketio=None):
                     
                     # Default sources focused on AI, technology, and science
                     default_sources = [
+                        # Advanced AI Knowledge
                         {
                             'url': 'https://en.wikipedia.org/wiki/Artificial_intelligence',
                             'source_type': 'website',
-                            'schedule': 'daily'
+                            'schedule': 'hourly'
                         },
                         {
                             'url': 'https://en.wikipedia.org/wiki/Machine_learning',
                             'source_type': 'website',
-                            'schedule': 'daily'
+                            'schedule': 'hourly'
                         },
                         {
                             'url': 'https://en.wikipedia.org/wiki/Natural_language_processing',
                             'source_type': 'website',
-                            'schedule': 'daily'
+                            'schedule': 'hourly'
                         },
+                        {
+                            'url': 'https://en.wikipedia.org/wiki/Deep_learning',
+                            'source_type': 'website',
+                            'schedule': 'hourly'
+                        },
+                        {
+                            'url': 'https://en.wikipedia.org/wiki/Reinforcement_learning',
+                            'source_type': 'website',
+                            'schedule': 'hourly'
+                        },
+                        {
+                            'url': 'https://en.wikipedia.org/wiki/Computer_vision',
+                            'source_type': 'website',
+                            'schedule': 'hourly'
+                        },
+                        {
+                            'url': 'https://en.wikipedia.org/wiki/Speech_recognition',
+                            'source_type': 'website',
+                            'schedule': 'hourly'
+                        },
+                        
+                        # Latest AI Research News
                         {
                             'url': 'https://news.mit.edu/topic/artificial-intelligence2',
                             'source_type': 'website',
-                            'schedule': 'daily'
+                            'schedule': 'hourly'
+                        },
+                        {
+                            'url': 'https://techcrunch.com/category/artificial-intelligence/',
+                            'source_type': 'website',
+                            'schedule': 'hourly'
+                        },
+                        {
+                            'url': 'https://www.technologyreview.com/topic/artificial-intelligence/',
+                            'source_type': 'website',
+                            'schedule': 'hourly'
+                        },
+                        
+                        # Advanced Technical Knowledge
+                        {
+                            'url': 'https://en.wikipedia.org/wiki/Quantum_computing',
+                            'source_type': 'website',
+                            'schedule': 'hourly'
+                        },
+                        {
+                            'url': 'https://en.wikipedia.org/wiki/Cryptography',
+                            'source_type': 'website',
+                            'schedule': 'hourly'
+                        },
+                        {
+                            'url': 'https://en.wikipedia.org/wiki/Computer_network',
+                            'source_type': 'website',
+                            'schedule': 'hourly'
+                        },
+                        {
+                            'url': 'https://en.wikipedia.org/wiki/Operating_system',
+                            'source_type': 'website',
+                            'schedule': 'hourly'
+                        },
+                        
+                        # Distributed Systems Knowledge
+                        {
+                            'url': 'https://en.wikipedia.org/wiki/Distributed_computing',
+                            'source_type': 'website',
+                            'schedule': 'hourly'
+                        },
+                        {
+                            'url': 'https://en.wikipedia.org/wiki/Cloud_computing',
+                            'source_type': 'website',
+                            'schedule': 'hourly'
+                        },
+                        {
+                            'url': 'https://en.wikipedia.org/wiki/Edge_computing',
+                            'source_type': 'website',
+                            'schedule': 'hourly'
+                        },
+                        
+                        # Security and Privacy Knowledge
+                        {
+                            'url': 'https://en.wikipedia.org/wiki/Computer_security',
+                            'source_type': 'website',
+                            'schedule': 'hourly'
+                        },
+                        {
+                            'url': 'https://en.wikipedia.org/wiki/Information_privacy',
+                            'source_type': 'website',
+                            'schedule': 'hourly'
+                        },
+                        {
+                            'url': 'https://en.wikipedia.org/wiki/Network_security',
+                            'source_type': 'website',
+                            'schedule': 'hourly'
+                        },
+                        {
+                            'url': 'https://en.wikipedia.org/wiki/Tor_(network)',
+                            'source_type': 'website',
+                            'schedule': 'hourly'
+                        },
+                        
+                        # Advanced Algorithms
+                        {
+                            'url': 'https://en.wikipedia.org/wiki/Algorithm',
+                            'source_type': 'website',
+                            'schedule': 'hourly'
+                        },
+                        {
+                            'url': 'https://en.wikipedia.org/wiki/Computational_complexity_theory',
+                            'source_type': 'website',
+                            'schedule': 'hourly'
+                        },
+                        {
+                            'url': 'https://en.wikipedia.org/wiki/Data_structure',
+                            'source_type': 'website',
+                            'schedule': 'hourly'
                         }
                     ]
                     

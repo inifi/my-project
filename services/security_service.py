@@ -5,11 +5,51 @@ import threading
 import psutil
 import os
 import socket
+import json
 from datetime import datetime, timedelta
 from utils.enhanced_security import (
     schedule_ip_rotation, dynamic_ip_rotation, detect_security_sandbox,
     detect_analysis_tools, get_public_ip, generate_stealth_connection_headers
 )
+
+# Define fallback implementations for when the imported functions aren't available
+# This ensures our service can still run even if parts of the enhanced security are missing
+
+def _fallback_detect_security_sandbox():
+    """Fallback implementation for detect_security_sandbox"""
+    return False, []
+
+def _fallback_detect_analysis_tools():
+    """Fallback implementation for detect_analysis_tools"""
+    return False
+
+def _fallback_dynamic_ip_rotation():
+    """Fallback implementation for dynamic_ip_rotation"""
+    return None
+
+def _fallback_get_public_ip():
+    """Fallback implementation for get_public_ip"""
+    try:
+        import requests
+        response = requests.get('https://api.ipify.org?format=json', timeout=5)
+        if response.status_code == 200:
+            return response.json().get('ip')
+    except:
+        pass
+    return None
+
+# Ensure all required functions are available
+if not callable(detect_security_sandbox):
+    detect_security_sandbox = _fallback_detect_security_sandbox
+
+if not callable(detect_analysis_tools):
+    detect_analysis_tools = _fallback_detect_analysis_tools
+
+if not callable(dynamic_ip_rotation):
+    dynamic_ip_rotation = _fallback_dynamic_ip_rotation
+
+if not callable(get_public_ip):
+    get_public_ip = _fallback_get_public_ip
 
 logger = logging.getLogger(__name__)
 
@@ -218,11 +258,12 @@ def detect_suspicious_activity(app):
                 connections = psutil.net_connections(kind='inet')
                 
                 for conn in connections:
-                    if conn.status == 'ESTABLISHED' and conn.laddr.port in suspicious_ports:
+                    if conn.status == 'ESTABLISHED' and hasattr(conn.laddr, 'port') and conn.laddr.port in suspicious_ports:
                         return f"Suspicious network connection on port {conn.laddr.port}"
                     
                     # Check for unusual remote ports that might indicate a backdoor
-                    if conn.status == 'ESTABLISHED' and conn.raddr and conn.raddr.port > 50000:
+                    if (conn.status == 'ESTABLISHED' and conn.raddr and 
+                        hasattr(conn.raddr, 'port') and conn.raddr.port > 50000):
                         # High ports can be legitimate, but worth logging
                         logger.warning(f"Unusual high port connection: {conn.raddr.port}")
             except:
@@ -473,7 +514,7 @@ def perform_security_audit(app, socketio=None):
             # Check for unexpected open ports that might indicate backdoors
             current_ports = set()
             for conn in psutil.net_connections(kind='inet'):
-                if conn.status == 'LISTEN':
+                if conn.status == 'LISTEN' and hasattr(conn.laddr, 'port'):
                     current_ports.add(conn.laddr.port)
             
             expected_ports = {5000}  # Our application port
