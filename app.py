@@ -113,6 +113,7 @@ def auth():
     """Authentication page for owner verification with enhanced security"""
     from utils.security import scramble_login_credentials, evade_network_tracking
     from utils.security import detect_security_sandbox, detect_debugging
+    from app_routes import generate_auth_token
     
     # Use the fixed credentials from config
     FIXED_USERNAME = config.AUTH_USERNAME
@@ -205,14 +206,16 @@ def auth():
             # 2. Even if credentials valid, check for unusual patterns that might indicate phishing
             if credentials_valid:
                 # Check for suspiciously fast typing/input (potential automated attack)
-                if 'last_auth_start' in session:
-                    time_diff = datetime.utcnow() - session['last_auth_start']
-                    if time_diff.total_seconds() < 0.5:  # Too fast to be human
+                if 'last_auth_timestamp' in session:
+                    last_time = session['last_auth_timestamp'] 
+                    current_time = datetime.utcnow().timestamp()
+                    time_diff = current_time - last_time
+                    if time_diff < 0.5:  # Too fast to be human
                         logger.warning(f"Suspiciously fast auth attempt from {request.remote_addr}")
                         credentials_valid = False  # Reject even with valid credentials
             
             # Store this attempt time for future comparisons
-            session['last_auth_start'] = datetime.utcnow()
+            session['last_auth_timestamp'] = datetime.utcnow().timestamp()
             
             # Finally make a decision
             if credentials_valid:
@@ -240,6 +243,14 @@ def auth():
                     session['user_id'] = owner.id
                     session['auth_time'] = datetime.utcnow().timestamp()
                     session['fingerprint'] = hashlib.sha256(f"{request.user_agent}{request.remote_addr}".encode()).hexdigest()
+                    
+                    # Use Flask-Login to log in the user
+                    login_user(owner, remember=True)
+                    
+                    # Generate an API token for persistent sessions
+                    auth_token = generate_auth_token(owner.id)
+                    session['auth_token'] = auth_token
+                    session['auth_expiry'] = (datetime.utcnow() + timedelta(hours=1)).isoformat()
                     
                     return redirect(url_for('dashboard'))
                 else:
@@ -270,10 +281,11 @@ def auth():
     return render_template('auth.html')
 
 @app.route('/dashboard')
+@login_required
 def dashboard():
     """Main dashboard for the AI system"""
-    if 'user_id' not in session:
-        return redirect(url_for('auth'))
+    # Login_required decorator will handle authentication check
+    from app_routes import generate_auth_token
     
     with app.app_context():
         user = User.query.get(session['user_id'])
@@ -302,6 +314,8 @@ def dashboard():
 @app.route('/logout')
 def logout():
     """Logout the current user"""
+    # Use Flask-Login's logout_user() which handles everything properly
+    logout_user()
     session.clear()
     return redirect(url_for('index'))
 

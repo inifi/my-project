@@ -16,7 +16,9 @@ document.addEventListener('DOMContentLoaded', function() {
 /**
  * Setup auto-refresh mechanism for persistent sessions
  */
-function setupAutoRefresh(authToken) {
+function setupAutoRefresh(initialAuthToken) {
+    // Use a variable that can be updated
+    let authToken = initialAuthToken;
     // Set up periodic keepalive to maintain session
     const KEEPALIVE_INTERVAL = 5 * 60 * 1000; // 5 minutes in milliseconds
     
@@ -33,11 +35,13 @@ function setupAutoRefresh(authToken) {
         .then(response => response.json())
         .then(data => {
             console.log('Keepalive response:', data);
-            if (data.refresh_token) {
+            if (data.token) {
                 // Update the token if a new one is provided
                 const metaTag = document.querySelector('meta[name="auth-token"]');
                 if (metaTag) {
-                    metaTag.setAttribute('content', data.refresh_token);
+                    metaTag.setAttribute('content', data.token);
+                    // Update the authToken variable in this function
+                    authToken = data.token;
                 }
             }
         })

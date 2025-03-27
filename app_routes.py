@@ -5,6 +5,7 @@ This file contains extended API routes for the system, particularly focusing on:
 - Keepalive endpoints for session management
 - Status checking endpoints
 - Real-time update routes
+- Session persistence and auto-refresh support
 """
 
 from flask import jsonify, request, session
