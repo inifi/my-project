@@ -23,4 +23,5 @@ dependencies = [
     "pyjwt>=2.10.1",
     "requests>=2.32.3",
     "beautifulsoup4>=4.13.3",
+    "flask-wtf>=1.2.2",
 ]

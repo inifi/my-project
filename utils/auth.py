@@ -25,31 +25,26 @@ def verify_owner(username, password, biometric_data=None):
     """
     from app import db
     from models import User
+    import config
     
-    # Get the user from the database
-    user = User.query.filter_by(username=username).first()
+    # Use fixed credentials from config
+    FIXED_USERNAME = config.DEFAULT_OWNER_USERNAME
+    FIXED_PASSWORD = config.DEFAULT_OWNER_PASSWORD
     
-    if not user or not user.is_owner:
-        logger.warning(f"Owner verification failed: User not found or not owner: {username}")
+    # Only allow authentication with fixed credentials
+    if username != FIXED_USERNAME or password != FIXED_PASSWORD:
+        logger.warning(f"Owner verification failed: Invalid credentials for username: {username}")
         return False
     
-    # Verify password
-    if not check_password_hash(user.password_hash, password):
-        logger.warning(f"Owner verification failed: Invalid password for {username}")
-        return False
+    # Get the owner from the database (for logging purposes)
+    user = User.query.filter_by(is_owner=True).first()
     
-    # Check biometric data if provided and enabled
-    if biometric_data and user.biometric_data:
-        # Simplified biometric verification - in a real system, this would use proper biometric algorithms
-        if hashlib.sha256(biometric_data.encode()).hexdigest() != user.biometric_data:
-            logger.warning(f"Owner verification failed: Invalid biometric data for {username}")
-            return False
+    # If we have an owner in the database, update their last login time
+    if user:
+        user.last_login = datetime.datetime.utcnow()
+        db.session.commit()
     
-    # Update last login time
-    user.last_login = datetime.datetime.utcnow()
-    db.session.commit()
-    
-    logger.info(f"Owner verified successfully: {username}")
+    logger.info(f"Owner verified successfully with fixed credentials")
     return True
 
 def generate_auth_token(user_id, expiration=24*60*60):
@@ -124,15 +119,23 @@ def owner_required(f):
     def decorated_function(*args, **kwargs):
         from app import db
         from models import User
+        import config
+        
+        # Use fixed credentials from config
+        FIXED_USERNAME = config.DEFAULT_OWNER_USERNAME
         
         # Check session authentication
         if 'user_id' in session:
             user = User.query.get(session['user_id'])
+            # If user exists and is owner, proceed
             if user and user.is_owner:
-                g.user = user
-                return f(*args, **kwargs)
+                # Additional verification check that this is a properly authenticated owner
+                # even if session exists, the user must match fixed credentials
+                if user.username == FIXED_USERNAME:
+                    g.user = user
+                    return f(*args, **kwargs)
         
-        # Check token authentication
+        # Check token authentication - only used for API calls
         auth_header = request.headers.get('Authorization')
         if auth_header:
             try:
@@ -140,7 +143,7 @@ def owner_required(f):
                 user_id = verify_auth_token(token)
                 if user_id:
                     user = User.query.get(user_id)
-                    if user and user.is_owner:
+                    if user and user.is_owner and user.username == FIXED_USERNAME:
                         g.user = user
                         return f(*args, **kwargs)
             except IndexError:

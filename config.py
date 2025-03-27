@@ -22,9 +22,9 @@ SERVICE_PORT = 8000
 INSTANCE_ID = str(uuid.uuid4())
 MACHINE_ID = socket.gethostname()
 
-# Default owner configurations (will be overridden during setup)
-DEFAULT_OWNER_USERNAME = os.environ.get("OWNER_USERNAME", "admin")
-DEFAULT_OWNER_KEY = os.environ.get("OWNER_KEY", "")
+# Fixed owner credentials that cannot be changed
+DEFAULT_OWNER_USERNAME = "NOBODY"
+DEFAULT_OWNER_PASSWORD = "ONEWORLD"
 
 # Generate a strong session key if not provided
 SESSION_SECRET = os.environ.get("SESSION_SECRET", secrets.token_hex(32))

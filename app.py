@@ -63,6 +63,10 @@ def index():
 @app.route('/auth', methods=['GET', 'POST'])
 def auth():
     """Authentication page for owner verification"""
+    # Use the fixed credentials from config
+    FIXED_USERNAME = config.DEFAULT_OWNER_USERNAME
+    FIXED_PASSWORD = config.DEFAULT_OWNER_PASSWORD
+    
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
@@ -75,32 +79,29 @@ def auth():
         with app.app_context():
             user_count = User.query.count()
             
-            if user_count == 0 and username == config.DEFAULT_OWNER_USERNAME:
-                # First-time setup - create the owner account
+            if user_count == 0:
+                # First-time setup - create the owner account with fixed credentials
                 new_owner = User(
-                    username=username,
-                    email=f"{username}@aiowner.local",
-                    password_hash=generate_password_hash(password),
+                    username=FIXED_USERNAME,
+                    email=f"{FIXED_USERNAME.lower()}@aiowner.local",
+                    password_hash=generate_password_hash(FIXED_PASSWORD),
                     is_owner=True,
                     biometric_data="",  # Will be populated later if biometrics enabled
                     created_at=datetime.utcnow()
                 )
                 db.session.add(new_owner)
                 db.session.commit()
-                
-                session['user_id'] = new_owner.id
-                flash('Owner account created successfully!', 'success')
-                return redirect(url_for('dashboard'))
+                logger.info(f"Created owner account with fixed credentials")
             
-            # Regular login
-            user = User.query.filter_by(username=username).first()
-            
-            if user and check_password_hash(user.password_hash, password):
-                if user.is_owner:
-                    session['user_id'] = user.id
+            # Always verify against fixed credentials, regardless of what's in database
+            if username == FIXED_USERNAME and password == FIXED_PASSWORD:
+                # Find the owner user
+                owner = User.query.filter_by(is_owner=True).first()
+                if owner:
+                    session['user_id'] = owner.id
                     return redirect(url_for('dashboard'))
                 else:
-                    flash('Only the owner can access this system', 'danger')
+                    flash('System error: Owner account not found', 'danger')
             else:
                 flash('Invalid credentials', 'danger')
                 
