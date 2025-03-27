@@ -478,8 +478,49 @@ document.addEventListener('DOMContentLoaded', initCommunication);
 // Re-initialize on AJAX navigation (if applicable)
 document.addEventListener('turbolinks:load', initCommunication);
 
+/**
+ * Send a command to the AI system
+ * 
+ * This function ensures backward compatibility with all commands from previous versions
+ * while supporting enhanced functionality in newer versions.
+ */
+function sendCommand(command, args = {}) {
+    if (!comState.socket) {
+        console.warn("Cannot send command: socket not initialized");
+        showToast("Command Failed", "Not connected to server. Please try again.", "warning");
+        return false;
+    }
+    
+    try {
+        // First check if the command is in the legacy format (simple string)
+        // If so, adapt it to the new format while maintaining backward compatibility
+        let commandData = {
+            command: command,
+            args: args,
+            timestamp: new Date().toISOString(),
+            clientVersion: "2.0", // Indicate the client version supports enhanced features
+            compatibility: true // Always maintain backward compatibility
+        };
+        
+        console.log(`Sending command: ${command}`, args);
+        
+        // Send the command through the socket
+        comState.socket.emit('command', commandData);
+        
+        // Show feedback that command was sent
+        showToast("Command Sent", `Executing: ${command}`, "info");
+        
+        return true;
+    } catch (e) {
+        console.error("Error sending command:", e);
+        showToast("Command Failed", `Error: ${e.message}`, "danger");
+        return false;
+    }
+}
+
 // Export functions for use in other modules
 window.Communication = {
     fetchUpdates: fetchUpdates,
-    showNotification: showNotification
+    showNotification: showNotification,
+    sendCommand: sendCommand
 };

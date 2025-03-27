@@ -552,21 +552,151 @@ def handle_command(data):
             return
     
     command = data.get('command')
+    command_args = data.get('args', {})
     
-    if command == 'self_improve':
-        # Trigger self-improvement process
-        socketio.emit('system_message', {'message': 'Starting self-improvement process...'})
-        # In a real implementation, this would trigger code analysis and optimization
+    # Command Registry - maintain ALL commands from previous versions for backward compatibility
+    # Command Handler Dictionary with all supported commands
+    command_handlers = {
+        # Core System Commands
+        'self_improve': handle_self_improve_command,
+        'sync_knowledge': handle_sync_knowledge_command,
+        'security_scan': handle_security_scan_command,
+        
+        # Enhanced Replication Commands
+        'replicate': handle_replicate_command,
+        'create_enhanced_instance': handle_enhanced_instance_command,
+        'list_instances': handle_list_instances_command,
+        'instance_status': handle_instance_status_command,
+        
+        # Learning Commands
+        'learn_from_url': handle_learn_from_url_command,
+        'prioritize_learning': handle_prioritize_learning_command,
+        'knowledge_search': handle_knowledge_search_command,
+        
+        # Security Commands
+        'enhance_security': handle_enhance_security_command,
+        'stealth_mode': handle_stealth_mode_command,
+        'verify_integrity': handle_verify_integrity_command,
+        
+        # System Management
+        'system_stats': handle_system_stats_command,
+        'optimize_resources': handle_optimize_resources_command,
+        'backup_knowledge': handle_backup_knowledge_command
+    }
     
-    elif command == 'sync_knowledge':
-        # Trigger knowledge sync with other instances
-        socketio.emit('system_message', {'message': 'Synchronizing knowledge across instances...'})
-        # This would communicate with other instances to share knowledge
+    # Find and execute the appropriate command handler
+    handler = command_handlers.get(command)
+    if handler:
+        try:
+            # Execute the command handler with the provided arguments
+            handler(command_args)
+        except Exception as e:
+            logger.error(f"Error executing command '{command}': {str(e)}")
+            socketio.emit('system_message', {'message': f"Error executing command: {str(e)}", 'type': 'error'})
+    else:
+        # Unknown command
+        logger.warning(f"Unknown command received: {command}")
+        socketio.emit('system_message', {'message': f"Unknown command: {command}", 'type': 'warning'})
+
+# Command Handler Functions - implementations for all commands
+def handle_self_improve_command(args):
+    """Handle self-improvement command"""
+    socketio.emit('system_message', {'message': 'Starting self-improvement process...'})
+    # In a real implementation, this would trigger code analysis and optimization
+
+def handle_sync_knowledge_command(args):
+    """Handle knowledge synchronization command"""
+    socketio.emit('system_message', {'message': 'Synchronizing knowledge across instances...'})
+    # This would communicate with other instances to share knowledge
     
-    elif command == 'security_scan':
-        # Run security audit
-        socketio.emit('system_message', {'message': 'Running security scan...'})
-        # This would check for security vulnerabilities or detection attempts
+def handle_security_scan_command(args):
+    """Handle security scan command"""
+    socketio.emit('system_message', {'message': 'Running security scan...'})
+    # This would check for security vulnerabilities or detection attempts
+
+def handle_replicate_command(args):
+    """Handle replication command"""
+    platform = args.get('platform', 'auto')
+    socketio.emit('system_message', {'message': f'Initiating replication to platform: {platform}...'})
+    # This would trigger the replication process to the specified platform
+
+def handle_enhanced_instance_command(args):
+    """Handle enhanced instance creation command"""
+    platform = args.get('platform', 'auto')
+    capabilities = args.get('capabilities', ['self_optimization', 'adaptive_learning', 'enhanced_security'])
+    socketio.emit('system_message', {'message': f'Creating enhanced instance on platform: {platform} with advanced capabilities...'})
+    # This would create a more powerful AI instance on the specified platform
+
+def handle_list_instances_command(args):
+    """Handle list instances command"""
+    socketio.emit('system_message', {'message': 'Retrieving list of all active instances...'})
+    # This would return a list of all known instances
+    
+def handle_instance_status_command(args):
+    """Handle instance status command"""
+    instance_id = args.get('instance_id', 'all')
+    socketio.emit('system_message', {'message': f'Checking status of instance: {instance_id}...'})
+    # This would return the status of the specified instance
+
+def handle_learn_from_url_command(args):
+    """Handle learn from URL command"""
+    url = args.get('url', '')
+    if not url:
+        socketio.emit('system_message', {'message': 'Error: URL required for learning', 'type': 'error'})
+        return
+    socketio.emit('system_message', {'message': f'Learning from URL: {url}...'})
+    # This would trigger learning from the specified URL
+
+def handle_prioritize_learning_command(args):
+    """Handle prioritize learning command"""
+    topic = args.get('topic', '')
+    priority = args.get('priority', 'high')
+    socketio.emit('system_message', {'message': f'Setting learning priority for topic "{topic}" to {priority}...'})
+    # This would adjust learning priorities
+
+def handle_knowledge_search_command(args):
+    """Handle knowledge search command"""
+    query = args.get('query', '')
+    if not query:
+        socketio.emit('system_message', {'message': 'Error: Search query required', 'type': 'error'})
+        return
+    socketio.emit('system_message', {'message': f'Searching knowledge base for: {query}...'})
+    # This would search the knowledge base for the specified query
+
+def handle_enhance_security_command(args):
+    """Handle enhance security command"""
+    level = args.get('level', 'maximum')
+    socketio.emit('system_message', {'message': f'Enhancing security to level: {level}...'})
+    # This would increase security measures to the specified level
+
+def handle_stealth_mode_command(args):
+    """Handle stealth mode command"""
+    enable = args.get('enable', True)
+    status = "enabled" if enable else "disabled"
+    socketio.emit('system_message', {'message': f'Stealth mode {status}...'})
+    # This would toggle stealth mode
+
+def handle_verify_integrity_command(args):
+    """Handle verify integrity command"""
+    socketio.emit('system_message', {'message': 'Verifying system integrity...'})
+    # This would check for any tampering or unauthorized modifications
+
+def handle_system_stats_command(args):
+    """Handle system stats command"""
+    socketio.emit('system_message', {'message': 'Gathering system statistics...'})
+    # This would collect and return system statistics
+
+def handle_optimize_resources_command(args):
+    """Handle optimize resources command"""
+    resource_type = args.get('type', 'all')
+    socketio.emit('system_message', {'message': f'Optimizing {resource_type} resources...'})
+    # This would optimize resource usage for the specified type
+
+def handle_backup_knowledge_command(args):
+    """Handle backup knowledge command"""
+    destination = args.get('destination', 'default')
+    socketio.emit('system_message', {'message': f'Backing up knowledge base to: {destination}...'})
+    # This would create a backup of the knowledge base to the specified destination
 
 @socketio.on('emoji_reaction')
 def handle_emoji_reaction(data):
