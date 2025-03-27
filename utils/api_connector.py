@@ -192,15 +192,29 @@ def fetch_rss_feed(url):
 
 def query_huggingface_api(payload, model_id="google/flan-t5-base", api_key=None):
     """
-    Query HuggingFace Inference API
+    Query HuggingFace Inference API for text generation, summarization,
+    question answering, or other NLP tasks.
     
     Args:
-        payload: The input data for the model
-        model_id: HuggingFace model ID
-        api_key: HuggingFace API token (optional)
+        payload: The input data for the model. Should be a dictionary with keys
+                 relevant to the model (e.g., "inputs" for text, "question" and "context"
+                 for question answering models)
+        model_id: HuggingFace model ID (e.g., "google/flan-t5-base", "facebook/bart-large-cnn")
+        api_key: HuggingFace API token (required for production usage)
         
     Returns:
         dict: API response or None if failed
+        
+    Example:
+        # For text generation
+        response = query_huggingface_api({"inputs": "What is artificial intelligence?"}, 
+                                         model_id="google/flan-t5-base", 
+                                         api_key=YOUR_API_KEY)
+                                         
+        # For summarization
+        response = query_huggingface_api({"inputs": long_text}, 
+                                         model_id="facebook/bart-large-cnn", 
+                                         api_key=YOUR_API_KEY)
     """
     api_key = api_key or os.environ.get("HUGGINGFACE_API_KEY", "")
     

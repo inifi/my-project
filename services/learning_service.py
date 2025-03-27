@@ -34,6 +34,60 @@ def start_learning_service(app, socketio=None):
         # This prevents the service from hanging
         with app.app_context():
             try:
+                from models import LearningSource, db
+                
+                # Check for existing learning sources
+                sources_count = LearningSource.query.count()
+                
+                # If no sources exist, add some default ones
+                if sources_count == 0:
+                    logger.info("No learning sources found, adding defaults")
+                    
+                    # Default sources focused on AI, technology, and science
+                    default_sources = [
+                        {
+                            'url': 'https://en.wikipedia.org/wiki/Artificial_intelligence',
+                            'source_type': 'website',
+                            'schedule': 'daily'
+                        },
+                        {
+                            'url': 'https://en.wikipedia.org/wiki/Machine_learning',
+                            'source_type': 'website',
+                            'schedule': 'daily'
+                        },
+                        {
+                            'url': 'https://en.wikipedia.org/wiki/Natural_language_processing',
+                            'source_type': 'website',
+                            'schedule': 'daily'
+                        },
+                        {
+                            'url': 'https://news.mit.edu/topic/artificial-intelligence2',
+                            'source_type': 'website',
+                            'schedule': 'daily'
+                        }
+                    ]
+                    
+                    # Add sources to database
+                    for source_data in default_sources:
+                        source = LearningSource(
+                            url=source_data['url'],
+                            source_type=source_data['source_type'],
+                            schedule=source_data['schedule'],
+                            # Use owner ID 1 as default
+                            added_by_user_id=1
+                        )
+                        db.session.add(source)
+                    
+                    # Commit the changes
+                    db.session.commit()
+                    logger.info(f"Added {len(default_sources)} default learning sources")
+                    
+                    # Emit status update
+                    if socketio:
+                        socketio.emit('system_message', {
+                            'message': f'Added {len(default_sources)} default learning sources'
+                        })
+                
                 # Update the knowledge base
                 update_knowledge_base(app, socketio)
                 

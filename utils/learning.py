@@ -23,7 +23,14 @@ logger = logging.getLogger(__name__)
 
 def update_knowledge_base(app, socketio=None):
     """
-    Update the AI's knowledge base with new information
+    Update the AI's knowledge base with new information from learning sources
+    
+    This function:
+    1. Retrieves active learning sources from the database
+    2. Processes each source to extract valuable information
+    3. Filters out duplicate or low-quality information
+    4. Stores new knowledge in the database
+    5. Reports progress in real-time via socketio if available
     
     Args:
         app: Flask application context
@@ -348,15 +355,20 @@ def analyze_sentiment(text):
             'error': str(e)
         }
 
-def extract_topics(text):
+def extract_topics(text, use_ml=True):
     """
-    Extract main topics from a text
+    Extract main topics from a text using NLP techniques
+    
+    This function analyzes the content of a text and identifies the main topics
+    or concepts mentioned. It uses a combination of rule-based techniques and
+    machine learning for enhanced accuracy.
     
     Args:
         text: Text to analyze
+        use_ml: Whether to use machine learning models (requires API key)
         
     Returns:
-        list: Extracted topics
+        list: Extracted topics as list of strings
     """
     try:
         # Try to use OpenAI for topic extraction

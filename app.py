@@ -231,22 +231,66 @@ def add_learning_source():
             return jsonify({'success': False, 'message': 'Only the owner can perform this action'}), 403
     
     url = request.form.get('url')
-    source_type = request.form.get('type')
+    source_type = request.form.get('type', 'website')
     
-    if not url or not source_type:
-        return jsonify({'success': False, 'message': 'URL and type are required'}), 400
+    if not url:
+        return jsonify({'success': False, 'message': 'URL is required'}), 400
+    
+    # Validate URL format
+    try:
+        from urllib.parse import urlparse
+        result = urlparse(url)
+        if not all([result.scheme, result.netloc]):
+            return jsonify({'success': False, 'message': 'Invalid URL format'}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Invalid URL: {str(e)}'}), 400
+    
+    # Check if URL already exists
+    existing = LearningSource.query.filter_by(url=url).first()
+    if existing:
+        return jsonify({'success': False, 'message': 'This URL is already in the learning sources'}), 400
+    
+    # Check active source count limit
+    from config import MAX_LEARNING_SOURCES
+    active_count = LearningSource.query.filter_by(status='active').count()
+    if active_count >= MAX_LEARNING_SOURCES:
+        return jsonify({'success': False, 'message': f'Maximum active learning sources limit reached ({MAX_LEARNING_SOURCES})'}), 400
     
     try:
+        # Test the URL with a quick scrape to verify it works
+        from utils.scraper import scrape_website
+        test_result = scrape_website(url, obfuscate=True, timeout=10)
+        
+        if not test_result['success'] or not test_result['content']:
+            logger.warning(f"URL test failed: {url} - {test_result.get('error', 'No content extracted')}")
+            # We'll still add it but mark the potential issue
+            socketio.emit('system_message', {
+                'message': f'Warning: URL test failed, but adding anyway: {url}'
+            })
+        
+        # Create new learning source
         new_source = LearningSource(
             url=url,
             source_type=source_type,
+            schedule='daily',  # Default to daily schedule
             last_accessed=None,
             added_by_user_id=user.id,
+            status='active',
             created_at=datetime.utcnow()
         )
         db.session.add(new_source)
         db.session.commit()
+        
+        # Log the addition
+        logger.info(f"Added new learning source: {url}")
+        
+        # Send real-time update
+        socketio.emit('system_message', {
+            'message': f'New learning source added: {url}'
+        })
+        
         return jsonify({'success': True, 'message': 'Learning source added successfully'})
+    
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error adding learning source: {str(e)}")
