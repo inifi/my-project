@@ -162,6 +162,74 @@ EXPERIMENTAL_FEATURES = {
     "adversarial_training": True
 }
 
+# Platform compatibility settings
+PLATFORM_COMPATIBILITY = {
+    # Enable automatic platform detection and adaptation
+    "auto_detect_platform": True,
+    
+    # Enable graceful degradation of features when not available
+    "graceful_degradation": True,
+    
+    # Enable cross-platform abstraction layer
+    "cross_platform_abstraction": True,
+    
+    # Deployment health monitoring
+    "health_monitoring": True,
+    
+    # Automatic resource provisioning
+    "auto_provisioning": True,
+    
+    # Zero-configuration networking
+    "zero_config_networking": True,
+    
+    # Platform-specific optimizations
+    "platform_optimizations": True,
+    
+    # Error recovery mechanisms
+    "auto_recovery": True,
+    
+    # Container support
+    "container_support": True,
+    
+    # Cloud-native integrations
+    "cloud_integration": True
+}
+
+# Platform-specific deployment settings
+DEPLOYMENT_SETTINGS = {
+    # Fallback mechanisms by platform
+    "fallbacks": {
+        "database": ["sqlite", "json_file", "memory"],
+        "networking": ["direct", "proxy", "p2p"],
+        "storage": ["local", "memory", "distributed"],
+        "compute": ["local", "distributed", "offload"]
+    },
+    
+    # Required resources by platform
+    "required_resources": {
+        "container": {
+            "min_memory": "256MB",
+            "min_cpu": 0.25,
+            "storage": "50MB"
+        },
+        "cloud": {
+            "min_memory": "512MB",
+            "min_cpu": 0.5,
+            "storage": "100MB"
+        },
+        "server": {
+            "min_memory": "1GB",
+            "min_cpu": 1,
+            "storage": "200MB"
+        },
+        "notebook": {
+            "min_memory": "512MB",
+            "min_cpu": 0.5,
+            "storage": "50MB"
+        }
+    }
+}
+
 # API usage configuration
 USE_OPENAI = OPENAI_API_KEY != ""
 USE_HUGGINGFACE = HUGGINGFACE_API_KEY != ""
