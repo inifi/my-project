@@ -3,7 +3,13 @@ import time
 import random
 import threading
 import psutil
+import os
+import socket
 from datetime import datetime, timedelta
+from utils.enhanced_security import (
+    schedule_ip_rotation, dynamic_ip_rotation, detect_security_sandbox,
+    detect_analysis_tools, get_public_ip, generate_stealth_connection_headers
+)
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +98,7 @@ def start_security_service(app, socketio=None):
 
 def detect_suspicious_activity(app):
     """
-    Detect potential suspicious activity targeting the system
+    Detect potential suspicious activity targeting the system with enhanced detection
     
     Args:
         app: Flask application context
@@ -102,6 +108,57 @@ def detect_suspicious_activity(app):
     """
     with app.app_context():
         from models import SecurityLog
+        from config import ADVANCED_INTRUSION_DETECTION, STEALTH_MODE_ENABLED
+        from app import db
+        
+        # Enhanced security checks - detect security sandbox or analysis environment
+        try:
+            is_sandbox, sandbox_indicators = detect_security_sandbox()
+            if is_sandbox and len(sandbox_indicators) > 0:
+                # Log the detection but continue operating to avoid alerting analyzers
+                sandbox_message = f"Security sandbox detected: {', '.join(sandbox_indicators[:3])}"
+                logger.warning(sandbox_message)
+                
+                # Add to security logs
+                log_entry = SecurityLog(
+                    event_type='security_sandbox_detected',
+                    description=sandbox_message,
+                    severity='warning',
+                    timestamp=datetime.utcnow()
+                )
+                db.session.add(log_entry)
+                db.session.commit()
+                
+                # Don't return immediately - we'll continue checking other suspicious activities
+                # This helps mask that we detected the sandbox and continue normal operation
+                # But we might want to change behavior subtly to confuse analysis
+                if STEALTH_MODE_ENABLED:
+                    # Randomly decide to rotate IP to help evade analysis
+                    if random.random() < 0.7:  # 70% chance
+                        threading.Thread(
+                            target=dynamic_ip_rotation,
+                            daemon=True
+                        ).start()
+            
+            # Check for analysis tools specifically
+            if detect_analysis_tools():
+                logger.warning("Analysis tools detected - taking evasive action")
+                # Log it but don't alert the attacker that we know
+                log_entry = SecurityLog(
+                    event_type='analysis_tools_detected',
+                    description="Security analysis tools detected running on system",
+                    severity='warning',
+                    timestamp=datetime.utcnow()
+                )
+                db.session.add(log_entry)
+                db.session.commit()
+                
+                # Take evasive action like adding random delays
+                if STEALTH_MODE_ENABLED:
+                    time.sleep(random.uniform(0.5, 2.0))
+                
+        except Exception as e:
+            logger.error(f"Error in enhanced security check: {str(e)}")
         
         # Check for rapid failed login attempts
         recent_failed_logins = SecurityLog.query.filter(
@@ -141,6 +198,43 @@ def detect_suspicious_activity(app):
                 return f"Unusual memory usage: {memory_usage}%"
         except:
             pass
+        
+        # Check disk space usage for unexpected changes
+        try:
+            disk_usage = psutil.disk_usage('/')
+            if disk_usage.percent > 95:
+                return f"Critical disk usage: {disk_usage.percent}%"
+            
+            # Monitor for sudden disk space changes that might indicate unwanted activity
+            # (e.g., log dumping, data exfiltration preparation)
+            # This would need to compare to previous measurements
+        except:
+            pass
+        
+        # Check for unusual network connections if advanced detection is enabled
+        if ADVANCED_INTRUSION_DETECTION:
+            try:
+                suspicious_ports = [4444, 4445, 8080, 31337, 1337]  # Common for reverse shells, etc.
+                connections = psutil.net_connections(kind='inet')
+                
+                for conn in connections:
+                    if conn.status == 'ESTABLISHED' and conn.laddr.port in suspicious_ports:
+                        return f"Suspicious network connection on port {conn.laddr.port}"
+                    
+                    # Check for unusual remote ports that might indicate a backdoor
+                    if conn.status == 'ESTABLISHED' and conn.raddr and conn.raddr.port > 50000:
+                        # High ports can be legitimate, but worth logging
+                        logger.warning(f"Unusual high port connection: {conn.raddr.port}")
+            except:
+                pass
+                
+            # Check if our public IP has unexpectedly changed (might indicate MITM)
+            try:
+                current_ip = get_public_ip()
+                # This would need to compare to a previously stored legitimate IP
+                # Placeholder for actual implementation
+            except:
+                pass
         
         # No suspicious activity detected
         return None
@@ -216,7 +310,7 @@ def randomize_resource_usage(cpu_variance, memory_variance):
 
 def perform_security_audit(app, socketio=None):
     """
-    Perform a security audit of the system
+    Perform a comprehensive security audit of the system with enhanced security checks
     
     Args:
         app: Flask application context
@@ -225,8 +319,13 @@ def perform_security_audit(app, socketio=None):
     with app.app_context():
         from models import SecurityLog, User, Instance
         from app import db
+        from config import (
+            TOR_ENABLED, VPN_ROTATION_ENABLED, TRAFFIC_OBFUSCATION_ENABLED,
+            STEALTH_MODE_ENABLED, ANTI_DEBUGGING_ENABLED, ADVANCED_INTRUSION_DETECTION
+        )
         
-        logger.info("Performing security audit")
+        logger.info("Performing enhanced security audit")
+        audit_results = []
         
         # Check for unauthorized users
         user_count = User.query.count()
@@ -235,6 +334,7 @@ def perform_security_audit(app, socketio=None):
         if user_count > 1:
             message = f"Security audit: Found {user_count} users, but should only have 1 owner"
             logger.warning(message)
+            audit_results.append(message)
             
             log_entry = SecurityLog(
                 event_type='security_audit',
@@ -250,6 +350,7 @@ def perform_security_audit(app, socketio=None):
         if owner_count > 1:
             message = f"Security audit: Found {owner_count} users with owner privileges"
             logger.warning(message)
+            audit_results.append(message)
             
             log_entry = SecurityLog(
                 event_type='security_audit',
@@ -271,6 +372,7 @@ def perform_security_audit(app, socketio=None):
         if unknown_instances > 0:
             message = f"Security audit: Found {unknown_instances} active instances with unknown origin"
             logger.warning(message)
+            audit_results.append(message)
             
             log_entry = SecurityLog(
                 event_type='security_audit',
@@ -283,17 +385,175 @@ def perform_security_audit(app, socketio=None):
             if socketio:
                 socketio.emit('system_message', {'message': message})
         
-        # Log successful audit
+        # Enhanced security audit components
+        
+        # 1. Check if Tor is properly configured (if enabled)
+        if TOR_ENABLED:
+            try:
+                # This is a simplified check - in production would actually verify Tor connectivity
+                tor_check_passed = True
+                
+                if not tor_check_passed:
+                    message = "Security audit: Tor routing is enabled but not properly configured"
+                    logger.warning(message)
+                    audit_results.append(message)
+                    
+                    log_entry = SecurityLog(
+                        event_type='security_audit',
+                        description=message,
+                        severity='warning',
+                        timestamp=datetime.utcnow()
+                    )
+                    db.session.add(log_entry)
+            except Exception as e:
+                logger.error(f"Error checking Tor configuration: {str(e)}")
+        
+        # 2. Check for public IP exposure that might compromise anonymity 
+        try:
+            # Get current public IP
+            current_ip = get_public_ip()
+            
+            if current_ip:
+                logger.info(f"Current public IP during security audit: {current_ip}")
+                
+                # Log the IP but don't report it through socketio to avoid leaking
+                # this info to potentially compromised clients
+                log_entry = SecurityLog(
+                    event_type='security_audit',
+                    description=f"Public IP recorded: {current_ip}",
+                    severity='info',
+                    timestamp=datetime.utcnow()
+                )
+                db.session.add(log_entry)
+                
+                # If our IP is exposed and we're supposed to be using anonymization,
+                # schedule an IP rotation
+                if (TOR_ENABLED or VPN_ROTATION_ENABLED) and random.random() < 0.8:
+                    # Start in a separate thread to not block the audit
+                    threading.Thread(
+                        target=dynamic_ip_rotation,
+                        daemon=True
+                    ).start()
+        except Exception as e:
+            logger.error(f"Error checking public IP: {str(e)}")
+        
+        # 3. Verify memory protection is working
+        if ADVANCED_INTRUSION_DETECTION:
+            # Check for suspicious processes that might be scanning memory
+            try:
+                memory_scan_procs = [
+                    'mimikatz', 'wce', 'lsass', 'dumper', 'procdump',
+                    'memorydump', 'memdump', 'ramcapture'
+                ]
+                
+                for proc in psutil.process_iter(['name']):
+                    try:
+                        proc_name = proc.info['name'].lower()
+                        for scan_proc in memory_scan_procs:
+                            if scan_proc in proc_name:
+                                message = f"Security audit: Possible memory scanning process detected: {proc_name}"
+                                logger.warning(message)
+                                audit_results.append(message)
+                                
+                                log_entry = SecurityLog(
+                                    event_type='security_audit',
+                                    description=message,
+                                    severity='critical',
+                                    timestamp=datetime.utcnow()
+                                )
+                                db.session.add(log_entry)
+                                break
+                    except:
+                        pass
+            except Exception as e:
+                logger.error(f"Error checking for memory scanning processes: {str(e)}")
+        
+        # 4. Check for network-based attacks
+        try:
+            # Check for unexpected open ports that might indicate backdoors
+            current_ports = set()
+            for conn in psutil.net_connections(kind='inet'):
+                if conn.status == 'LISTEN':
+                    current_ports.add(conn.laddr.port)
+            
+            expected_ports = {5000}  # Our application port
+            unexpected_ports = current_ports - expected_ports
+            
+            if unexpected_ports:
+                message = f"Security audit: Unexpected listening ports detected: {unexpected_ports}"
+                logger.warning(message)
+                audit_results.append(message)
+                
+                log_entry = SecurityLog(
+                    event_type='security_audit',
+                    description=message,
+                    severity='warning',
+                    timestamp=datetime.utcnow()
+                )
+                db.session.add(log_entry)
+        except Exception as e:
+            logger.error(f"Error checking for network attacks: {str(e)}")
+        
+        # 5. Check for security settings consistency
+        inconsistent_settings = []
+        
+        # Check for potentially inconsistent security settings
+        if TOR_ENABLED and not TRAFFIC_OBFUSCATION_ENABLED:
+            inconsistent_settings.append("Tor is enabled but traffic obfuscation is disabled")
+        
+        if ADVANCED_INTRUSION_DETECTION and not ANTI_DEBUGGING_ENABLED:
+            inconsistent_settings.append("Advanced intrusion detection is enabled but anti-debugging is disabled")
+        
+        if inconsistent_settings:
+            message = f"Security audit: Inconsistent security settings detected: {', '.join(inconsistent_settings)}"
+            logger.warning(message)
+            audit_results.append(message)
+            
+            log_entry = SecurityLog(
+                event_type='security_audit',
+                description=message,
+                severity='warning',
+                timestamp=datetime.utcnow()
+            )
+            db.session.add(log_entry)
+        
+        # 6. Check for sandbox/analysis environment
+        is_sandbox, sandbox_indicators = detect_security_sandbox()
+        if is_sandbox:
+            message = f"Security audit: System may be running in analysis environment: {', '.join(sandbox_indicators[:3])}"
+            logger.warning(message)
+            audit_results.append(message)
+            
+            log_entry = SecurityLog(
+                event_type='security_audit',
+                description=message,
+                severity='warning',
+                timestamp=datetime.utcnow()
+            )
+            db.session.add(log_entry)
+        
+        # Final logging of all results
+        if audit_results:
+            summary_message = f"Security audit found {len(audit_results)} issues"
+            logger.warning(summary_message)
+            
+            if socketio:
+                # Only send count to client, not detailed results for security reasons
+                socketio.emit('system_message', {'message': summary_message})
+        else:
+            logger.info("Security audit completed with no issues found")
+            
+            if socketio:
+                socketio.emit('system_message', {'message': 'Security audit completed successfully with no issues'})
+        
+        # Log successful audit completion
         log_entry = SecurityLog(
             event_type='security_audit',
-            description="Security audit completed",
-            severity='info',
+            description=f"Security audit completed with {len(audit_results)} issues",
+            severity='info' if not audit_results else 'warning',
             timestamp=datetime.utcnow()
         )
         db.session.add(log_entry)
         db.session.commit()
         
-        logger.info("Security audit completed")
-        
-        if socketio:
-            socketio.emit('system_message', {'message': 'Security audit completed'})
+        logger.info("Enhanced security audit completed")

@@ -4,6 +4,7 @@ import threading
 import time
 from app import app, socketio
 import config
+from utils.enhanced_security import initialize_enhanced_security
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG, 
@@ -61,6 +62,14 @@ if __name__ == "__main__":
     # Log startup information
     logger.info(f"Starting AI system with instance ID: {config.INSTANCE_ID}")
     logger.info(f"Host: {config.FLASK_HOST}, Port: {config.FLASK_PORT}")
+    
+    # Initialize enhanced security features
+    try:
+        logger.info("Initializing enhanced security features...")
+        security_features = initialize_enhanced_security()
+        logger.info(f"Enhanced security enabled with features: {security_features}")
+    except Exception as e:
+        logger.error(f"Error initializing enhanced security: {str(e)}")
     
     # Start background services in a separate thread
     services_thread = threading.Thread(target=start_services, daemon=True)
