@@ -284,7 +284,8 @@ def query_ai():
                 if knowledge_items:
                     response = "Based on my knowledge: " + " ".join([item.content for item in knowledge_items])
                 else:
-                    response = "I don't have specific knowledge about that query yet. I'm continuously learning and improving."
+                    # Create a more informative response that explains what the AI is doing
+                    response = "I'm currently building my knowledge base on this topic. As a self-improving AI system, I'm actively learning from multiple sources including websites, APIs, and owner inputs. You can help me learn by adding new learning sources using commands like 'learn from https://example.com' or by providing direct information. What specific information would you like me to focus on learning?"
         
         # Log this interaction
         log_entry = SecurityLog(
@@ -350,10 +351,22 @@ def handle_command(data):
 # Initialize the owner in the database if not present
 def initialize_system():
     with app.app_context():
-        # Check if any users exist, if not, system needs setup
+        # Check if any users exist, if not, create the owner with fixed credentials
         user_count = User.query.count()
         if user_count == 0:
-            logger.info("No users found. System needs initial setup.")
+            logger.info("No users found. Creating owner account with fixed credentials.")
+            
+            # Create the owner with the fixed credentials: NOBODY/ONEWORLD
+            owner = User(
+                username="NOBODY",
+                email="owner@example.com",  # Placeholder email
+                password_hash=generate_password_hash("ONEWORLD"),
+                is_owner=True,
+                created_at=datetime.utcnow()
+            )
+            db.session.add(owner)
+            db.session.commit()
+            logger.info("Owner account created with fixed credentials.")
         
         # Register this instance in the database
         existing_instance = Instance.query.filter_by(
@@ -376,3 +389,47 @@ def initialize_system():
 # Run initialization when the app starts
 with app.app_context():
     initialize_system()
+    
+    # Add a default learning source for demonstration
+    if LearningSource.query.count() == 0:
+        # Find the owner user
+        owner = User.query.filter_by(is_owner=True).first()
+        if owner:
+            # Add a few starter learning sources
+            starter_sources = [
+                {"url": "https://en.wikipedia.org/wiki/Artificial_intelligence", "source_type": "website"},
+                {"url": "https://en.wikipedia.org/wiki/Machine_learning", "source_type": "website"},
+                {"url": "https://news.ycombinator.com/rss", "source_type": "rss"}
+            ]
+            
+            for source in starter_sources:
+                new_source = LearningSource(
+                    url=source["url"],
+                    source_type=source["source_type"],
+                    schedule="daily",
+                    status="active",
+                    added_by_user_id=owner.id,
+                    created_at=datetime.utcnow()
+                )
+                db.session.add(new_source)
+            
+            # Add some initial knowledge
+            initial_knowledge = [
+                "Self-improvement in AI systems involves learning from new data, optimizing algorithms, and adapting behavior based on feedback.",
+                "Autonomous AI replication can involve creating instances across different platforms, sharing knowledge, and distributing tasks.",
+                "Security in AI systems includes measures to prevent unauthorized access, maintain system integrity, and protect sensitive data."
+            ]
+            
+            for knowledge_item in initial_knowledge:
+                new_knowledge = KnowledgeBase(
+                    content=knowledge_item,
+                    source_type="system_initialization",
+                    confidence=0.9,
+                    verified=True,
+                    created_at=datetime.utcnow(),
+                    creator_id=owner.id
+                )
+                db.session.add(new_knowledge)
+            
+            db.session.commit()
+            logger.info("Added initial learning sources and knowledge")

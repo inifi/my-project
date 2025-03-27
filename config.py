@@ -43,7 +43,7 @@ COMMUNICATION_KEY = os.environ.get("COMMUNICATION_KEY", secrets.token_hex(32))
 DISCOVERY_ENDPOINT = os.environ.get("DISCOVERY_ENDPOINT", "")
 
 # Learning Configuration
-LEARNING_ENABLED = os.environ.get("LEARNING_ENABLED", "True").lower() == "true"
+LEARNING_ENABLED = os.environ.get("LEARNING_ENABLED", "False").lower() == "true"
 LEARNING_INTERVAL = int(os.environ.get("LEARNING_INTERVAL", "300"))
 WEB_SCRAPING_ENABLED = os.environ.get("WEB_SCRAPING_ENABLED", "True").lower() == "true"
 MAX_LEARNING_SOURCES = int(os.environ.get("MAX_LEARNING_SOURCES", "10"))

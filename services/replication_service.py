@@ -30,68 +30,69 @@ def start_replication_service(app, socketio=None):
                 socketio.emit('system_message', {'message': 'Replication service is disabled in configuration'})
             return
         
-        # Main replication loop
-        while True:
-            with app.app_context():
-                try:
-                    # Check for other instances
-                    active_instances = check_for_instances(app)
+        # Do a single replication cycle instead of an infinite loop
+        # This prevents the service from hanging
+        with app.app_context():
+            try:
+                # Check for other instances
+                active_instances = check_for_instances(app)
+                
+                if socketio:
+                    socketio.emit('system_message', {
+                        'message': f'Found {len(active_instances)} active instances'
+                    })
+                
+                # Sync knowledge with other instances
+                if active_instances:
+                    for instance in active_instances:
+                        try:
+                            sync_result = sync_knowledge_with_instance(app, instance)
+                            
+                            if socketio and sync_result:
+                                socketio.emit('system_message', {
+                                    'message': f'Successfully synced with instance {instance.instance_id}'
+                                })
+                        except Exception as e:
+                            logger.error(f"Error syncing with instance {instance.instance_id}: {str(e)}")
+                
+                # Check if we need to replicate to a new platform
+                should_replicate = should_create_new_instance(app)
+                
+                if should_replicate:
+                    logger.info("Triggering replication to a new platform")
                     
                     if socketio:
                         socketio.emit('system_message', {
-                            'message': f'Found {len(active_instances)} active instances'
+                            'message': 'Starting replication to a new platform...'
                         })
                     
-                    # Sync knowledge with other instances
-                    if active_instances:
-                        for instance in active_instances:
-                            try:
-                                sync_result = sync_knowledge_with_instance(app, instance)
-                                
-                                if socketio and sync_result:
-                                    socketio.emit('system_message', {
-                                        'message': f'Successfully synced with instance {instance.instance_id}'
-                                    })
-                            except Exception as e:
-                                logger.error(f"Error syncing with instance {instance.instance_id}: {str(e)}")
+                    # Attempt direct replication
+                    replication_result = replicate_to_new_platform(app, 'colab')
                     
-                    # Check if we need to replicate to a new platform
-                    should_replicate = should_create_new_instance(app)
-                    
-                    if should_replicate:
-                        logger.info("Triggering replication to a new platform")
-                        
+                    if replication_result:
+                        logger.info("Successfully replicated to a new platform")
                         if socketio:
                             socketio.emit('system_message', {
-                                'message': 'Starting replication to a new platform...'
+                                'message': 'Successfully replicated to a new platform'
                             })
-                        
-                        # Replicate in a separate thread to avoid blocking
-                        replication_thread = threading.Thread(
-                            target=replicate_to_new_platform,
-                            args=(app, 'colab'),  # Default to Colab
-                            daemon=True
-                        )
-                        replication_thread.start()
+                    else:
+                        logger.warning("Failed to replicate to a new platform")
+                        if socketio:
+                            socketio.emit('system_message', {
+                                'message': 'Failed to replicate to a new platform'
+                            })
                 
-                except Exception as e:
-                    logger.error(f"Error in replication service loop: {str(e)}")
-                    
-                    if socketio:
-                        socketio.emit('system_message', {
-                            'message': f'Replication service error: {str(e)}'
-                        })
+                logger.info("Replication service cycle completed successfully")
+                if socketio:
+                    socketio.emit('system_message', {'message': 'Replication service cycle completed'})
             
-            # Randomize the replication interval slightly to avoid detection patterns
-            sleep_time = REPLICATION_INTERVAL + random.randint(-300, 300)
-            sleep_time = max(1800, sleep_time)  # Ensure minimum 30 minutes
-            
-            logger.info(f"Replication service sleeping for {sleep_time} seconds")
-            
-            # Sleep in small increments to be more responsive to shutdown
-            for _ in range(sleep_time // 60):
-                time.sleep(60)
-                # Check for termination signal (future use)
+            except Exception as e:
+                logger.error(f"Error in replication service: {str(e)}")
+                
+                if socketio:
+                    socketio.emit('system_message', {
+                        'message': f'Replication service error: {str(e)}'
+                    })
     
     except Exception as e:
         logger.error(f"Replication service failed: {str(e)}")

@@ -30,37 +30,30 @@ def start_learning_service(app, socketio=None):
                 socketio.emit('system_message', {'message': 'Learning service is disabled in configuration'})
             return
         
-        # Main learning loop
-        while True:
-            with app.app_context():
-                try:
-                    # Update the knowledge base
-                    update_knowledge_base(app, socketio)
-                    
-                    # Analyze existing knowledge for patterns
-                    analyze_existing_knowledge(app, socketio)
-                    
-                    # Report learning progress
-                    report_learning_progress(app, socketio)
+        # Do a single learning cycle instead of an infinite loop
+        # This prevents the service from hanging
+        with app.app_context():
+            try:
+                # Update the knowledge base
+                update_knowledge_base(app, socketio)
                 
-                except Exception as e:
-                    logger.error(f"Error in learning service loop: {str(e)}")
-                    
-                    if socketio:
-                        socketio.emit('system_message', {
-                            'message': f'Learning service error: {str(e)}'
-                        })
+                # Analyze existing knowledge for patterns
+                analyze_existing_knowledge(app, socketio)
+                
+                # Report learning progress
+                report_learning_progress(app, socketio)
+                
+                logger.info("Learning service cycle completed successfully")
+                if socketio:
+                    socketio.emit('system_message', {'message': 'Learning service cycle completed'})
             
-            # Randomize the learning interval slightly to avoid detection patterns
-            sleep_time = LEARNING_INTERVAL + random.randint(-30, 30)
-            sleep_time = max(60, sleep_time)  # Ensure minimum 60 seconds
-            
-            logger.info(f"Learning service sleeping for {sleep_time} seconds")
-            
-            # Sleep in small increments to be more responsive to shutdown
-            for _ in range(sleep_time // 5):
-                time.sleep(5)
-                # Check for termination signal (future use)
+            except Exception as e:
+                logger.error(f"Error in learning service: {str(e)}")
+                
+                if socketio:
+                    socketio.emit('system_message', {
+                        'message': f'Learning service error: {str(e)}'
+                    })
     
     except Exception as e:
         logger.error(f"Learning service failed: {str(e)}")

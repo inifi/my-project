@@ -26,67 +26,61 @@ def start_security_service(app, socketio=None):
         from app import db
         from config import TRAFFIC_OBFUSCATION_ENABLED, TOR_ENABLED, VPN_ROTATION_ENABLED
         
-        # Main security loop
-        while True:
-            with app.app_context():
-                try:
-                    # Monitor for suspicious activity
-                    suspicious_activity = detect_suspicious_activity(app)
-                    
-                    if suspicious_activity:
-                        logger.warning(f"Detected suspicious activity: {suspicious_activity}")
-                        
-                        # Log the suspicious activity
-                        log_entry = SecurityLog(
-                            event_type='suspicious_activity',
-                            description=f"Detected suspicious activity: {suspicious_activity}",
-                            severity='warning',
-                            timestamp=datetime.utcnow()
-                        )
-                        db.session.add(log_entry)
-                        db.session.commit()
-                        
-                        if socketio:
-                            socketio.emit('system_message', {
-                                'message': f'Security alert: {suspicious_activity}'
-                            })
-                    
-                    # Generate fake traffic if enabled
-                    if TRAFFIC_OBFUSCATION_ENABLED:
-                        # Determine how many fake requests to generate
-                        fake_count = random.randint(1, 5)
-                        
-                        # This is a simulated endpoint since we don't have a real external URL
-                        simulated_url = "https://example.com"
-                        
-                        logger.debug(f"Generating {fake_count} fake traffic requests")
-                        generate_fake_traffic(simulated_url, fake_count)
-                    
-                    # Randomize resource usage to avoid detection
-                    cpu_variance, memory_variance = calculate_resource_usage_variance()
-                    randomize_resource_usage(cpu_variance, memory_variance)
-                    
-                    # Perform security audit periodically
-                    if random.randint(1, 10) == 1:  # 10% chance each cycle
-                        perform_security_audit(app, socketio)
+        # Do a single security cycle instead of an infinite loop
+        # This prevents the service from hanging
+        with app.app_context():
+            try:
+                # Monitor for suspicious activity
+                suspicious_activity = detect_suspicious_activity(app)
                 
-                except Exception as e:
-                    logger.error(f"Error in security service loop: {str(e)}")
+                if suspicious_activity:
+                    logger.warning(f"Detected suspicious activity: {suspicious_activity}")
+                    
+                    # Log the suspicious activity
+                    log_entry = SecurityLog(
+                        event_type='suspicious_activity',
+                        description=f"Detected suspicious activity: {suspicious_activity}",
+                        severity='warning',
+                        timestamp=datetime.utcnow()
+                    )
+                    db.session.add(log_entry)
+                    db.session.commit()
                     
                     if socketio:
                         socketio.emit('system_message', {
-                            'message': f'Security service error: {str(e)}'
+                            'message': f'Security alert: {suspicious_activity}'
                         })
-            
-            # Randomize the security check interval
-            sleep_time = random.randint(30, 120)
-            
-            logger.debug(f"Security service sleeping for {sleep_time} seconds")
-            
-            # Sleep in small increments to be more responsive to shutdown
-            for _ in range(sleep_time // 5):
-                time.sleep(5)
-                # Check for termination signal (future use)
+                
+                # Generate fake traffic if enabled
+                if TRAFFIC_OBFUSCATION_ENABLED:
+                    # Determine how many fake requests to generate
+                    fake_count = random.randint(1, 5)
+                    
+                    # This is a simulated endpoint since we don't have a real external URL
+                    simulated_url = "https://example.com"
+                    
+                    logger.debug(f"Generating {fake_count} fake traffic requests")
+                    generate_fake_traffic(simulated_url, fake_count)
+                
+                # Randomize resource usage to avoid detection
+                cpu_variance, memory_variance = calculate_resource_usage_variance()
+                randomize_resource_usage(cpu_variance, memory_variance)
+                
+                # Perform security audit periodically
+                if random.randint(1, 10) == 1:  # 10% chance each cycle
+                    perform_security_audit(app, socketio)
+                
+                logger.info("Security service cycle completed successfully")
+                if socketio:
+                    socketio.emit('system_message', {'message': 'Security service cycle completed'})
+                
+            except Exception as e:
+                logger.error(f"Error in security service: {str(e)}")
+                
+                if socketio:
+                    socketio.emit('system_message', {
+                        'message': f'Security service error: {str(e)}'
+                    })
     
     except Exception as e:
         logger.error(f"Security service failed: {str(e)}")

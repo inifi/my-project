@@ -163,7 +163,7 @@
         const chatForm = document.getElementById('chat-form');
         const messageInput = document.getElementById('message-input');
         const chatContainer = document.getElementById('chat-container');
-        const systemConsole = document.getElementById('systemConsole');
+        const systemConsole = document.getElementById('system-console-content');
         const toggleConsoleBtn = document.getElementById('toggle-console');
         const consoleBody = document.getElementById('console-body');
         
@@ -191,11 +191,50 @@
             // Clear input
             messageInput.value = '';
             
-            // Add to console
-            addConsoleMessage(`[USER] Command received: ${message.substring(0, 30)}${message.length > 30 ? '...' : ''}`, 'info');
+            // Process the message - directly call API
+            // Show thinking indicator
+            addChatMessage('AI System', 'Processing your request...', 'system');
             
-            // Process the message
-            processUserMessage(message);
+            // Send message to backend
+            fetch('/api/query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'query': message
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Get the chat container
+                const chatContainer = document.getElementById('chat-container');
+                
+                // Remove the "thinking" message
+                if (chatContainer && chatContainer.lastChild) {
+                    chatContainer.removeChild(chatContainer.lastChild);
+                }
+                
+                if (data.success) {
+                    // Add AI response
+                    addChatMessage('AI System', data.response, 'system');
+                } else {
+                    // Add error message
+                    addChatMessage('AI System', 'Error: ' + data.message, 'system');
+                }
+            })
+            .catch(error => {
+                // Get the chat container
+                const chatContainer = document.getElementById('chat-container');
+                
+                // Remove the "thinking" message
+                if (chatContainer && chatContainer.lastChild) {
+                    chatContainer.removeChild(chatContainer.lastChild);
+                }
+                
+                // Add error message
+                addChatMessage('AI System', 'Sorry, there was an error processing your request. Please try again.', 'system');
+            });
         });
         
         // Add a message to the chat
@@ -501,6 +540,44 @@
                 addConsoleMessage('Error starting replication service: ' + error.message, 'danger');
             });
         });
+        
+        // Auto-start all services (only called when page loads)
+        function startDefaultServices() {
+            // Start learning service
+            fetch('/api/start_learning', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('learningStatus').textContent = 'Active';
+                        document.getElementById('learningStatus').className = 'badge bg-success';
+                        addConsoleMessage('[SYSTEM] Learning service started automatically', 'success');
+                    }
+                });
+                
+            // Start replication service    
+            fetch('/api/start_replication', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('replicationStatus').textContent = 'Active';
+                        document.getElementById('replicationStatus').className = 'badge bg-success';
+                        addConsoleMessage('[SYSTEM] Replication service started automatically', 'success');
+                    }
+                });
+                
+            // Start security service
+            fetch('/api/start_security', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('securityStatus').textContent = 'Active';
+                        document.getElementById('securityStatus').className = 'badge bg-success';
+                        addConsoleMessage('[SYSTEM] Security service started automatically', 'success');
+                    }
+                });
+                
+            addConsoleMessage('[SYSTEM] All services started automatically', 'info');
+        }
         
         // Start Security Service button
         document.getElementById('startSecurityBtn').addEventListener('click', function(e) {
